@@ -758,7 +758,81 @@ class EightballGame:
         self.match_end_timestamp = match_end_timestamp
         self.game_log_iterator = game_log_iterator
         self.game_log = game_log
+    def to_json(self):
+        # Convert the game state to a dict suitable for serialization
+        game_state = {
+            "game": self.game,
+            "break_shot": self.break_shot,
+            "break_and_run": self.break_and_run,
+            "current_shooter": self.current_shooter,
+            "inning_total": self.inning_total,
+            "lag_winner": self.lag_winner,
+            "eightball_rack_count": self.eightball_rack_count,
+            "eightball_pocketing_context": self.eightball_pocketing_context,
+            "inning_count_at_rack_start": self.inning_count_at_rack_start,
+            "rack_breaking_player": self.rack_breaking_player,
+            "current_shooter_defensive_shot": self.current_shooter_defensive_shot,
+            "match_winner": self.match_winner,
+            "match_start_timestamp": self.match_start_timestamp,
+            "match_start_human_readable": self.match_start_human_readable,
+            "match_end_timestamp": self.match_end_timestamp,
+            "game_log_iterator": self.game_log_iterator,
+            "game_log": self.game_log
+        }
+        return json.dumps(game_state)
+    
+    def ball_pocketed(self, ball_number):
+        # Check if the ball number is valid (1 to 15)
+        if not (1 <= ball_number <= 15):
+            return json.dumps({'error': 'Invalid ball number'}), 400
 
+        # Check if the game is still in progress
+        if self.match_winner:
+            return json.dumps({'error': 'The game is already over'}), 400
+
+        # Update the game state to reflect the pocketed ball
+        if ball_number == 8:
+            # Special case: Pocketing the 8-ball
+            if self.eightball_rack_count == 1:
+                # If it's the first rack, pocketing the 8-ball wins the game
+                self.match_winner = self.current_shooter
+            else:
+                # If it's not the first rack, pocketing the 8-ball is a foul
+                self.switch_turn()  # Switch turn to the opponent
+                self.current_shooter_defensive_shot += 1  # Increment defensive shot count
+        elif ball_number == 0:
+            # Special case: Pocketing the cue ball (scratch)
+            self.switch_turn()  # Switch turn to the opponent
+            self.current_shooter_defensive_shot += 1  # Increment defensive shot count
+        else:
+            # Regular ball pocketed
+            if self.current_shooter == self.player1_name:
+                self.eightball_pocketing_context = 'player1'
+            elif self.current_shooter == self.player2_name:
+                self.eightball_pocketing_context = 'player2'
+        
+        # Update other relevant game state attributes
+        # For example, remove the pocketed ball from the table, update inning count, etc.
+
+        # Log the action
+        self.game_log[self.game_log_iterator] = f'Player {self.current_shooter} pocketed ball {ball_number}'
+        self.game_log_iterator += 1
+
+        # You may need to implement more complex logic based on your specific game rules
+
+        # Update the turn
+        self.switch_turn()
+
+        # Check if the game is over (e.g., if a player has won)
+        if self.is_game_over():
+            self.end_game()
+    @staticmethod
+    def from_json(json_str):
+        # Convert JSON string back to a dictionary
+        game_state = json.loads(json_str)
+        game = EightballGame(**game_state)
+        return game
+    
     def update_game_log(self, break_shot = False, inning = False, defensive_shot = False, rack_over = False, match_over = False, push_to_json_file=False, undo=False):
         """This method will update the game_log dictionary"""
 
@@ -1166,8 +1240,8 @@ class NineballGame:
         self.player_2_balls_pocketed = []
 
 
-player_1.create_json_file_player_entry()
-player_2.create_json_file_player_entry()
+#player_1.create_json_file_player_entry()
+#player_2.create_json_file_player_entry()
 
 
 #######################################################################################################################
@@ -1217,36 +1291,36 @@ player_2.create_json_file_player_entry()
 
 #######################################################################################################################
 
-# NINEBALL SIMULATION MATCHES
-current_match = NineballGame()
+# # NINEBALL SIMULATION MATCHES
+# current_match = NineballGame()
 
-# Simulation Match 1: Ryan Oswalt wins
-current_match.lag_for_the_break("Ryan Oswalt")
-print(f"Lag Winner: {current_match.lag_winner}")
-current_match.ball_pocketed(9) # Ryan Oswalt = 2
-current_match.shooter_turn_over()
-current_match.ball_pocketed(1) # Peter Parker = 1
-current_match.defensive_shot()
-current_match.shooter_turn_over()
-current_match.ball_pocketed(2) # Ryan Oswalt = 3
-current_match.ball_pocketed(3) # Ryan Oswalt = 4
-current_match.defensive_shot()
-current_match.shooter_turn_over()
-current_match.ball_pocketed(4) # Peter Parker = 2
-current_match.ball_pocketed(5) # Peter Parker = 3
-current_match.ball_pocketed(6) # Peter Parker = 4
-current_match.shooter_turn_over()
-current_match.ball_pocketed(7) # Ryan Oswalt = 5
-current_match.ball_pocketed(8) # Ryan Oswalt = 6
-current_match.ball_pocketed(9) # Ryan Oswalt = 8
-for ball in range(1, 10):
-    current_match.ball_pocketed(ball) # Ryan Oswalt = 18
-current_match.shooter_turn_over()
-current_match.ball_pocketed(1) # Peter Parker = 5
-current_match.shooter_turn_over()
-player_1.nineball_match_ball_count = 37 # Ryan Oswalt = 37
-player_2.nineball_match_ball_count = 24
-current_match.ball_pocketed(2) # Ryan Oswalt = 38
+# # Simulation Match 1: Ryan Oswalt wins
+# current_match.lag_for_the_break("Ryan Oswalt")
+# print(f"Lag Winner: {current_match.lag_winner}")
+# current_match.ball_pocketed(9) # Ryan Oswalt = 2
+# current_match.shooter_turn_over()
+# current_match.ball_pocketed(1) # Peter Parker = 1
+# current_match.defensive_shot()
+# current_match.shooter_turn_over()
+# current_match.ball_pocketed(2) # Ryan Oswalt = 3
+# current_match.ball_pocketed(3) # Ryan Oswalt = 4
+# current_match.defensive_shot()
+# current_match.shooter_turn_over()
+# current_match.ball_pocketed(4) # Peter Parker = 2
+# current_match.ball_pocketed(5) # Peter Parker = 3
+# current_match.ball_pocketed(6) # Peter Parker = 4
+# current_match.shooter_turn_over()
+# current_match.ball_pocketed(7) # Ryan Oswalt = 5
+# current_match.ball_pocketed(8) # Ryan Oswalt = 6
+# current_match.ball_pocketed(9) # Ryan Oswalt = 8
+# for ball in range(1, 10):
+#     current_match.ball_pocketed(ball) # Ryan Oswalt = 18
+# current_match.shooter_turn_over()
+# current_match.ball_pocketed(1) # Peter Parker = 5
+# current_match.shooter_turn_over()
+# player_1.nineball_match_ball_count = 37 # Ryan Oswalt = 37
+# player_2.nineball_match_ball_count = 24
+# current_match.ball_pocketed(2) # Ryan Oswalt = 38
 
 ##################################################################
 

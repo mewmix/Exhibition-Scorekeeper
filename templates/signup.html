@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+<body>
+    <h1>Signup</h1>
+    <form id="signup-form" hx-post="http://192.168.123.247:5000/signup" hx-target="#signup-message">
+        <div>
+            <label for="name">Username:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div>
+            <button type="submit">Signup</button>
+        </div>
+    </form>
+    <div id="signup-message" hx-swap="outerHTML"></div>
+</body>
+</html>
