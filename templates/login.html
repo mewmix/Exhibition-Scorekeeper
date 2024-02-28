@@ -4,23 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <!-- Include Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Include HTMX -->
     <script src="https://unpkg.com/htmx.org"></script>
 </head>
-<body>
-    <h1>Login</h1>
-    <form id="login-form" hx-post="{{ url_for('login') }}" hx-target="#login-message">
-        <div>
-            <label for="name">Username:</label>
-            <input type="text" id="name" name="name" required>
-        </div>
-        <div>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <div>
-            <button type="submit">Login</button>
-        </div>
-    </form>
-    <div id="login-message" hx-swap="outerHTML"></div>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-semibold mb-4">Login</h1>
+        <form id="login-form" hx-post="{{ url_for('login') }}" hx-target="#login-message" class="max-w-md">
+            <div class="mb-4">
+                <label for="name" class="block text-gray-700">Username:</label>
+                <input type="text" id="name" name="name" required class="form-input mt-1 block w-full">
+            </div>
+            <div class="mb-4">
+                <label for="password" class="block text-gray-700">Password:</label>
+                <input type="password" id="password" name="password" required class="form-input mt-1 block w-full">
+            </div>
+            <div class="mb-4">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-300">Login</button>
+            </div>
+        </form>
+        <div id="login-message" hx-swap="outerHTML" class="mt-4"></div>
+
+        <!-- Button to navigate to signup page -->
+        <a href="{{ url_for('signup') }}" class="text-blue-500 hover:underline">Sign Up</a>
+    </div>
 </body>
 </html>

@@ -53,6 +53,27 @@ def load_player_names():
 
 
 
+# Login Route
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        # Get user input from the form
+        name = request.form.get('name')
+        password = request.form.get('password')
+
+        # Query the database for the user
+        user = Player.query.filter_by(name=name).first()
+
+        # Check if the user exists and if the password is correct
+        if user and bcrypt.check_password_hash(user.password, password):
+            # Set the user ID in the session
+            session['user_id'] = user.id
+            return redirect(url_for('home'))  # Redirect to the home page after login
+
+        return jsonify({'error': 'Invalid username or password'}), 401
+
+    # Render the login form
+    return render_template('login.html')
 
 # Signup/Register Route
 @app.route('/signup', methods=['GET', 'POST'])
@@ -82,27 +103,6 @@ def signup():
     # Render the signup form
     return render_template('signup.html')
 
-# Login Route
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        # Get user input from the form
-        name = request.form.get('name')
-        password = request.form.get('password')
-
-        # Query the database for the user
-        user = Player.query.filter_by(name=name).first()
-
-        # Check if the user exists and if the password is correct
-        if user and bcrypt.check_password_hash(user.password, password):
-            # Set the user ID in the session
-            session['user_id'] = user.id
-            return redirect(url_for('home'))  # Redirect to the home page after login
-
-        return jsonify({'error': 'Invalid username or password'}), 401
-
-    # Render the login form
-    return render_template('login.html')
 
 # Logout Route
 @app.route('/logout')
@@ -123,26 +123,30 @@ def home():
     # User is not logged in, redirect to the login page
     return redirect(url_for('login'))
 
-
 @app.route('/game/start', methods=['POST'])
 def start_game():
     player1_name = request.form.get('player1')
     player2_name = request.form.get('player2')
+    game_type = request.form.get('game_type')  # New line to get the game type from the request
 
     # Check for existing game between these two players
     existing_game = GameState.query.filter(
         GameState.player1_name.in_([player1_name, player2_name]),
         GameState.player2_name.in_([player1_name, player2_name]),
-        GameState.current_state != 'finished'  # Assuming 'finished' is a state you set when the game is over
+        GameState.current_state != 'finished'
     ).first()
 
     if existing_game:
         return jsonify({'error': 'A game between these players is already in progress'}), 400
 
-    game = EightballGame(player1_name, player2_name)
-    # Assuming EightballGame has a method to serialize its state to JSON
+    if game_type == '8ball':
+        game = EightballGame(player1_name, player2_name)
+    elif game_type == '9ball':
+        game = NineballGame(player1_name, player2_name)  # Assuming NineballGame is similar to EightballGame
+    else:
+        return jsonify({'error': 'Invalid game type specified'}), 400
+
     serialized_game = game.to_json()
- 
 
     new_game_state = GameState(
         player1_name=player1_name,
@@ -152,9 +156,7 @@ def start_game():
     db.session.add(new_game_state)
     db.session.commit()
 
-    # Return the game ID
-    return jsonify({'message': f'Game started between {player1_name} and {player2_name}', 'game_id': new_game_state.id}), 201
-
+    return jsonify({'message': f'Game started between {player1_name} and {player2_name}', 'game_id': new_game_state.id, 'game_type': game_type}), 201
 
 @app.route('/game/stats/<int:game_id>', methods=['GET'])
 def game_stats(game_id):

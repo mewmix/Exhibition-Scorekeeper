@@ -26,7 +26,7 @@
         </section>
 
         <section class="mb-6">
-            <h2 class="text-lg mb-4">Start 8-Ball Game</h2>
+            <h2 class="text-lg mb-4">Start Game</h2>
             <form hx-post="{{ url_for('start_game') }}" hx-target="#game-status" hx-swap="outerHTML" class="mb-4">
                 <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="player1" required>
                     {% for player in players %}
@@ -38,10 +38,16 @@
                     <option value="{{ player }}">{{ player }}</option>
                     {% endfor %}
                 </select>
+                <!-- New dropdown for selecting the game type -->
+                <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="game_type" required>
+                    <option value="8ball">8-Ball</option>
+                    <option value="9ball">9-Ball</option>
+                </select>
                 <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Start Game</button>
             </form>
             <div id="game-status"></div>
         </section>
+        
 
         <section class="mb-6">
             <h2 class="text-lg mb-4">Game Actions</h2>
