@@ -8,7 +8,7 @@
 </head>
 <body>
     <h1>Signup</h1>
-    <form id="signup-form" hx-post="http://192.168.123.247:5000/signup" hx-target="#signup-message">
+    <form id="signup-form" hx-post="{{ url_for('signup') }}" hx-target="#signup-message">
         <div>
             <label for="name">Username:</label>
             <input type="text" id="name" name="name" required>
