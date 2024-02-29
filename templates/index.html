@@ -51,22 +51,29 @@
 
         <section class="mb-6">
             <h2 class="text-lg mb-4">Game Actions</h2>
+            <div class="mb-4">
+                <label for="game_type_select" class="block text-gray-700">Select Game Type:</label>
+                <select id="game_type_select" name="game_type" class="border rounded px-2 py-1">
+                    <option value="8ball">8Ball</option>
+                    <option value="9ball">9Ball</option>
+                </select>
+            </div>
             <form hx-post="{{ url_for('game_action') }}" hx-target="#action-response" hx-swap="outerHTML" class="mb-2">
                 <input type="hidden" name="action" value="pocket_ball">
+                <input type="hidden" name="game_type" value="8ball"> <!-- Default to 8ball, consider using JS to update -->
                 <label for="ball_number" class="text-gray-700 mr-2">Ball Number:</label>
                 <input class="border rounded px-2 py-1 text-gray-700 mr-2" type="number" id="ball_number" name="ball_number" min="1" max="15">
                 <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Pocket Ball</button>
             </form>
-            <form hx-post="{{ url_for('game_action') }}" hx-target="#action-response" hx-swap="outerHTML" class="mb-2">
-                <input type="hidden" name="action" value="defensive_shot">
-                <button class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" type="submit">Defensive Shot</button>
-            </form>
+            <!-- Additional forms for other actions like defensive shot or switch turn can remain unchanged but consider how they apply to 8ball vs 9ball -->
             <form hx-post="{{ url_for('game_action') }}" hx-target="#action-response" hx-swap="outerHTML" class="mb-2">
                 <input type="hidden" name="action" value="switch_turn">
+                <input type="hidden" name="game_type" value="8ball"> <!-- Again, defaulting to 8ball -->
                 <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Switch Turn</button>
             </form>
             <div id="action-response"></div>
         </section>
+        
         <section class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
             <h2 class="text-xl font-semibold mb-4">Game Stats</h2>
             <button 
@@ -81,6 +88,13 @@
             <div id="stats" class="mt-4"></div>
         </section>
         
-    
+        <script>
+            document.getElementById('game_type_select').addEventListener('change', function() {
+                var gameType = this.value;
+                var maxBallNumber = gameType === '8ball' ? 15 : 9;
+                document.getElementById('ball_number').max = maxBallNumber;
+            });
+            </script>
+            
 </body>
 </html>

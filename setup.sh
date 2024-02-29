@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the project root directory name
-PROJECT_ROOT="/Users/luisocampo/Exhibition-Scorekeeper"
+PROJECT_ROOT="~/Exhibition-Scorekeeper"
 
 # Create the project directory and initial Flask app structure
 mkdir -p 

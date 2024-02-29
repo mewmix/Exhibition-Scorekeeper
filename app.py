@@ -53,27 +53,23 @@ def load_player_names():
 
 
 
-# Login Route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Get user input from the form
         name = request.form.get('name')
         password = request.form.get('password')
-
-        # Query the database for the user
         user = Player.query.filter_by(name=name).first()
 
-        # Check if the user exists and if the password is correct
         if user and bcrypt.check_password_hash(user.password, password):
-            # Set the user ID in the session
             session['user_id'] = user.id
-            return redirect(url_for('home'))  # Redirect to the home page after login
-
-        return jsonify({'error': 'Invalid username or password'}), 401
-
-    # Render the login form
-    return render_template('login.html')
+            return redirect(url_for('home'))
+        else:
+            # This else block ensures a response is provided if credentials don't match
+            return jsonify({'error': 'Invalid username or password'}), 401
+    else:
+        # This covers the case for a GET request
+        return render_template('login.html')
+8
 
 # Signup/Register Route
 @app.route('/signup', methods=['GET', 'POST'])
@@ -186,40 +182,60 @@ def create_player():
 
 @app.route('/game/action', methods=['POST'])
 def game_action():
-    # Get the action and other relevant data from the request
+    # Validate action
     action = request.form.get('action')
-    ball_number = int(request.form.get('ball_number'))
+    game_type = request.form.get('game_type')  # Get game type from the request
+    valid_actions = ['pocket_ball', 'switch_turn', 'end_game']
+    
+    if action not in valid_actions:
+        return jsonify({'error': 'Invalid action'}), 400
+    if game_type not in ['8ball', '9ball']:
+        return jsonify({'error': 'Invalid game type'}), 400
+    
+    ball_number = None
+    if action == 'pocket_ball':
+        try:
+            ball_number = int(request.form.get('ball_number'))
+            if ball_number < 1 or (ball_number > 15 and game_type == '8ball') or (ball_number > 9 and game_type == '9ball'):
+                raise ValueError
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Invalid ball number'}), 400
 
-    # You can add more data fields as needed based on the type of action
-
-    # Retrieve the latest game state from the database
     latest_game_state = GameState.query.order_by(GameState.id.desc()).first()
-
     if not latest_game_state:
         return jsonify({'error': 'No game in progress'}), 404
 
-    # Deserialize the game state JSON string to a dictionary
     game_state_dict = json.loads(latest_game_state.current_state)
 
-    # Instantiate the game object using the deserialized game state dictionary
-    current_game = EightballGame.from_json(json.dumps(game_state_dict))
+    # Instantiate the game object based on the game type
+    if game_type == '8ball':
+        current_game = EightballGame.from_json(json.dumps(game_state_dict))
+    elif game_type == '9ball':
+        current_game = NineballGame.from_json(json.dumps(game_state_dict))
 
-    # Handle different actions based on the request
-    if action == 'pocket_ball':
-        # Perform logic to handle pocketing a ball
-        current_game.ball_pocketed(ball_number)
-    elif action == 'switch_turn':
-        # Perform logic to switch the turn
-        current_game.switch_turn()
-    elif action == 'end_game':
-        # Perform logic to end the game
-        current_game.end_game()
+    try:
+        message = 'Action processed'
+        if action == 'pocket_ball':
+            current_game.ball_pocketed(ball_number)
+            message = 'Ball pocketed successfully'
+        elif action == 'switch_turn':
+            current_game.switch_turn()
+            message = 'Turn switched'
+        elif action == 'end_game':
+            current_game.end_game()
+            message = 'Game ended'
 
-    # Update the game state in the database
-    latest_game_state.current_state = current_game.to_json()
-    db.session.commit()
+        latest_game_state.current_state = current_game.to_json()
+        db.session.commit()
 
-    return jsonify({'message': 'Action processed'})
+        response = {
+            'message': message,
+            'current_turn': current_game.current_turn,
+        }
+        return jsonify(response)
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to process action', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     with app.app_context():
