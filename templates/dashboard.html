@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Scorekeeper</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans leading-normal text-gray-800">
+    <header class="bg-blue-500 text-white text-center py-6">
+        <h1 class="text-xl font-bold">Welcome to Your Dashboard</h1>
+    </header>
+
+    <main class="p-4">
+        <!-- Personalized greeting -->
+        <section class="mb-6 text-center">
+            <h2 class="text-lg mb-4">Hello, {{ user_name }}!</h2>
+            <p>Welcome back to your Scorekeeper dashboard. Manage your games and view your stats.</p>
+        </section>
+
+        <!-- Start Game Section -->
+        <section class="mb-6">
+            <h2 class="text-lg mb-4">Start a New Game</h2>
+            <form hx-post="{{ url_for('start_game') }}" hx-target="#game-status" hx-swap="outerHTML" class="mb-4">
+                <div class="flex justify-center gap-2 mb-4">
+                    <!-- Player selection and game type similar to your original form -->
+                    <!-- Assuming 'players' context variable is passed to render player options -->
+                    <select class="border rounded px-2 py-1 text-gray-700" name="player1" required>
+                        {% for player in players %}
+                        <option value="{{ player }}">{{ player }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="border rounded px-2 py-1 text-gray-700" name="player2" required>
+                        {% for player in players %}
+                        <option value="{{ player }}">{{ player }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="border rounded px-2 py-1 text-gray-700" name="game_type" required>
+                        <option value="8ball">8-Ball</option>
+                        <option value="9ball">9-Ball</option>
+                    </select>
+                </div>
+                <div class="text-center">
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Start Game</button>
+                </div>
+            </form>
+            <div id="game-status"></div>
+        </section>
+
+        <!-- Game Stats Section -->
+        <section class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h2 class="text-xl font-semibold mb-4">Recent Game Stats</h2>
+            <div class="text-center mb-4">
+                <button 
+                    id="load-stats-btn" 
+                    hx-get="{{ url_for('game_stats', game_id=1) }}"  <!-- Example: dynamic game_id based on user's games -->
+                    hx-target="#stats" 
+                    hx-swap="outerHTML"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    type="button">
+                    Load Recent Game Stats
+                </button>
+            </div>
+            <div id="stats" class="mt-4"></div>
+        </section>
+    </main>
+</body>
+</html>

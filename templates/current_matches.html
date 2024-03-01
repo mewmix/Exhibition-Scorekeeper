@@ -1,0 +1,8 @@
+<!-- Dropdown to select current match -->
+<div class="mb-4">
+    <label for="current_match_select" class="block text-gray-700"></label>
+    <select id="current_match_select" hx-get="/current_matches" hx-trigger="load change" hx-target="#game_action_form">
+        <option>Select a match...</option>
+        {{ options_html }}  <!-- Render the options here -->
+    </select>
+</div>

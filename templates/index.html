@@ -7,94 +7,76 @@
     <script src="https://unpkg.com/htmx.org"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
 </head>
 <body class="bg-gray-100 font-sans leading-normal text-gray-800">
     <header class="bg-blue-500 text-white text-center py-6">
         <h1 class="text-xl font-bold">Scorekeeper</h1>
     </header>
 
-    <main class="p-4">
-        <section class="mb-6">
-            <h2 class="text-lg mb-4">Create Player Profile</h2>
-            <form hx-post="{{ url_for('create_player') }}" hx-target="#response" hx-swap="outerHTML" class="mb-4">
-                <input class="border rounded px-2 py-1 text-gray-700 mr-2" type="text" name="name" placeholder="Player Name" required>
-                <input class="border rounded px-2 py-1 text-gray-700 mr-2" type="number" name="lags_won" placeholder="Lags Won" value="0" min="0">
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Create Player</button>
-            </form>
-            <div id="response"></div>
-        </section>
+    <section class="mb-6">
+        <h2 class="text-lg mb-4">Start Game</h2>
+        <form hx-post="{{ url_for('start_game') }}" hx-target="#game-status" hx-swap="outerHTML" class="mb-4">
+            <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="player1_id" required>
+                {% for player in players %}
+                <option value="{{ player.id }}">{{ player.name }}</option>
+                {% endfor %}
+            </select>
+            <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="player2_id" required>
+                {% for player in players %}
+                <option value="{{ player.id }}">{{ player.name }}</option>
+                {% endfor %}
+            </select>
+            <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="game_type" required>
+                <option value="8ball">8-Ball</option>
+                <option value="9ball">9-Ball</option>
+            </select>
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Start Game</button>
+        </form>
+        <div id="game-status"></div>
+    </section>
 
-        <section class="mb-6">
-            <h2 class="text-lg mb-4">Start Game</h2>
-            <form hx-post="{{ url_for('start_game') }}" hx-target="#game-status" hx-swap="outerHTML" class="mb-4">
-                <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="player1" required>
-                    {% for player in players %}
-                    <option value="{{ player }}">{{ player }}</option>
-                    {% endfor %}
-                </select>
-                <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="player2" required>
-                    {% for player in players %}
-                    <option value="{{ player }}">{{ player }}</option>
-                    {% endfor %}
-                </select>
-                <!-- New dropdown for selecting the game type -->
-                <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="game_type" required>
-                    <option value="8ball">8-Ball</option>
-                    <option value="9ball">9-Ball</option>
-                </select>
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Start Game</button>
-            </form>
-            <div id="game-status"></div>
-        </section>
-        
+    <section class="mb-6">
+        <h2 class="text-lg mb-4">Game Actions</h2>
+        <div class="mb-4">
+            <label for="current_match_select" class="block text-gray-700">Select Current Match:</label>
+            <!-- Make sure to use the correct htmx attributes -->
+            <select id="current_match_select" hx-get="/current_matches" hx-trigger="load" hx-target="#game_action_form" class="border rounded px-2 py-1">
+                <option>Loading matches...</option>
+            </select>
+        </div>
+        <!-- Action form dynamically updated based on the selected match -->
+        <div id="game_action_form"></div>
+        <div id="action-response"></div>
+    </section>
+    
+    
+    <section class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <h2 class="text-xl font-semibold mb-4">Game Stats</h2>
+        <button 
+            id="load-stats-btn" 
+            hx-get="{{ url_for('game_stats', game_id=1) }}" 
+            hx-target="#stats" 
+            hx-swap="outerHTML"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            type="button">
+            Load Game Stats
+        </button>
+        <div id="stats" class="mt-4"></div>
+    </section>
 
-        <section class="mb-6">
-            <h2 class="text-lg mb-4">Game Actions</h2>
-            <div class="mb-4">
-                <label for="game_type_select" class="block text-gray-700">Select Game Type:</label>
-                <select id="game_type_select" name="game_type" class="border rounded px-2 py-1">
-                    <option value="8ball">8Ball</option>
-                    <option value="9ball">9Ball</option>
-                </select>
-            </div>
-            <form hx-post="{{ url_for('game_action') }}" hx-target="#action-response" hx-swap="outerHTML" class="mb-2">
-                <input type="hidden" name="action" value="pocket_ball">
-                <input type="hidden" name="game_type" value="8ball"> <!-- Default to 8ball, consider using JS to update -->
-                <label for="ball_number" class="text-gray-700 mr-2">Ball Number:</label>
-                <input class="border rounded px-2 py-1 text-gray-700 mr-2" type="number" id="ball_number" name="ball_number" min="1" max="15">
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Pocket Ball</button>
-            </form>
-            <!-- Additional forms for other actions like defensive shot or switch turn can remain unchanged but consider how they apply to 8ball vs 9ball -->
-            <form hx-post="{{ url_for('game_action') }}" hx-target="#action-response" hx-swap="outerHTML" class="mb-2">
-                <input type="hidden" name="action" value="switch_turn">
-                <input type="hidden" name="game_type" value="8ball"> <!-- Again, defaulting to 8ball -->
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Switch Turn</button>
-            </form>
-            <div id="action-response"></div>
-        </section>
-        
-        <section class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-            <h2 class="text-xl font-semibold mb-4">Game Stats</h2>
-            <button 
-                id="load-stats-btn" 
-                hx-get="{{ url_for('game_stats', game_id=1) }}" 
-                hx-target="#stats" 
-                hx-swap="outerHTML"
-                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                type="button">
-                Load Game Stats
-            </button>
-            <div id="stats" class="mt-4"></div>
-        </section>
-        
-        <script>
-            document.getElementById('game_type_select').addEventListener('change', function() {
-                var gameType = this.value;
-                var maxBallNumber = gameType === '8ball' ? 15 : 9;
-                document.getElementById('ball_number').max = maxBallNumber;
-            });
-            </script>
-            
+    <script>
+        // Update the action form based on the selected match
+        document.addEventListener("htmx:afterSwap", function (event) {
+            if (event.detail.target.id === "game_action_form") {
+                var matchId = document.getElementById("current_match_select").value;
+                var url = "/game_action_form/" + matchId;
+                fetch(url)
+                    .then(response => response.text())
+                    .then(data => {
+                        document.getElementById("game_action_form").innerHTML = data;
+                    });
+            }
+        });
+    </script>
 </body>
 </html>
