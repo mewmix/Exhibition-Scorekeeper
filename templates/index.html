@@ -40,8 +40,8 @@
         <div class="mb-4">
             <label for="current_match_select" class="block text-gray-700">Select Current Match:</label>
             <!-- Make sure to use the correct htmx attributes -->
-            <select id="current_match_select" hx-get="/current_matches" hx-trigger="load" hx-target="#game_action_form" class="border rounded px-2 py-1">
-                <option>Loading matches...</option>
+            <select id="current_match_select" hx-get="/current_matches" hx-trigger="load shown" hx-target="#current_match_select" class="border rounded px-2 py-1">
+                            <option>Loading matches...</option>
             </select>
         </div>
         <!-- Action form dynamically updated based on the selected match -->
@@ -65,18 +65,19 @@
     </section>
 
     <script>
-        // Update the action form based on the selected match
-        document.addEventListener("htmx:afterSwap", function (event) {
-            if (event.detail.target.id === "game_action_form") {
-                var matchId = document.getElementById("current_match_select").value;
-                var url = "/game_action_form/" + matchId;
-                fetch(url)
-                    .then(response => response.text())
-                    .then(data => {
-                        document.getElementById("game_action_form").innerHTML = data;
-                    });
-            }
+document.getElementById('current_match_select').addEventListener('change', function (event) {
+    var matchId = event.target.value;
+    var gameType = event.target.selectedOptions[0].getAttribute('data-game-type');
+    
+    // Perform a fetch to get the action form for the selected match
+    var url = `/game_action_form/${matchId}?gameType=${gameType}`;
+    fetch(url)
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById("game_action_form").innerHTML = data;
         });
+});
+
     </script>
 </body>
 </html>

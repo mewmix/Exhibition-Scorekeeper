@@ -227,7 +227,6 @@ def game_stats(game_id):
 @app.route('/current_matches')
 def current_matches():
     if 'user_id' not in session:
-        # Ensure there's a user session; otherwise, redirect or handle error appropriately
         return 'You must be logged in to view matches', 403
 
     user_id = session['user_id']
@@ -236,10 +235,17 @@ def current_matches():
         GameState.status == 'in_progress'
     ).all()
 
-    # Construct HTML options for the select dropdown
-    options_html = ''.join([f'<option value="{match.id}">{match.player1.name} vs {match.player2.name} - {match.game_type}</option>' for match in matches])
+    # Include additional data in the options, like game ID and player names
+    options_html = ''.join([
+        f'<option value="{match.id}" '
+        f'data-game-type="{match.game_type}" '
+        f'data-player1="{match.player1.name}" '
+        f'data-player2="{match.player2.name}">'
+        f'{match.player1.name} vs {match.player2.name} - {match.game_type.capitalize()}</option>'
+        for match in matches
+    ])
+    return jsonify(options_html), 200  # Returning JSON response
 
-    return options_html
 
 
 @app.route('/game_action_form/<int:match_id>')
