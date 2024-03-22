@@ -41,7 +41,7 @@
             <label for="current_match_select" class="block text-gray-700">Select Current Match:</label>
             <!-- Make sure to use the correct htmx attributes -->
             <select id="current_match_select" hx-get="/current_matches" hx-trigger="load shown" hx-target="#current_match_select" class="border rounded px-2 py-1">
-                            <option>Loading matches...</option>
+                            <option>1</option>
             </select>
         </div>
         <!-- Action form dynamically updated based on the selected match -->
@@ -65,18 +65,29 @@
     </section>
 
     <script>
-document.getElementById('current_match_select').addEventListener('change', function (event) {
-    var matchId = event.target.value;
-    var gameType = event.target.selectedOptions[0].getAttribute('data-game-type');
-    
-    // Perform a fetch to get the action form for the selected match
-    var url = `/game_action_form/${matchId}?gameType=${gameType}`;
-    fetch(url)
-        .then(response => response.text())
-        .then(data => {
-            document.getElementById("game_action_form").innerHTML = data;
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    var selectElement = document.getElementById('current_match_select');
+
+    // Preload the form if a valid match ID is already selected
+    if(selectElement.value && selectElement.value !== 'Loading matches...') {
+        loadGameActionForm(selectElement.value);
+    }
+
+    selectElement.addEventListener('change', function() {
+        // Load the form only when a valid match is selected
+        if(this.value && this.value !== 'Loading matches...') {
+            loadGameActionForm(this.value);
+        }
+    });
 });
+
+function loadGameActionForm(matchId) {
+    // Check if matchId is a number using a regular expression
+    if(/^[0-9]+$/.test(matchId)) {
+        htmx.ajax('GET', `/game_action_form/${matchId}`, '#game_action_form');
+    }
+}
+
 
     </script>
 </body>
