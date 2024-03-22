@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request, render_template, redirect, url_for, session
+from flask import Flask, request, session, jsonify, render_template, url_for, redirect, make_response
+
 from flask_cors import CORS
 import json
 import time 
@@ -98,14 +99,16 @@ def login():
 
         if user and bcrypt.check_password_hash(user.password, password):
             session['user_id'] = user.id
-            return redirect(url_for('home'))
+            # Instead of using redirect, we use make_response and set the HX-Redirect header manually
+            response = make_response('', 303)  # 303 See Other is recommended for POST-redirect-GET pattern
+            response.headers['HX-Redirect'] = url_for('home')
+            return response
         else:
             # This else block ensures a response is provided if credentials don't match
             return jsonify({'error': 'Invalid username or password'}), 401
     else:
         # This covers the case for a GET request
         return render_template('login.html')
-8
 
 # Signup/Register Route
 @app.route('/signup', methods=['GET', 'POST'])
