@@ -8,19 +8,19 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- Include HTMX -->
     <script src="https://unpkg.com/htmx.org"></script>
-    </head><body><form id="game-action-form" hx-post="/game/action" hx-target="#action-response" hx-swap="outerHTML">
-    <input type="hidden" name="match_id" value="{{ match_id }}">
-    <label for="action">Select Action:</label>
-    <select name="action" required>
-        <option value="pocket_ball">Pocket Ball</option>
-        <option value="switch_turn">Switch Turn</option>
-        <option value="end_game">End Game</option>
-    </select>
-    <br>
-    <label for="ball_number">Ball Number (if applicable):</label>
-    <input type="number" name="ball_number" min="1" max="15">
-    <br>
-    <button type="submit" hx-post="true">Submit</button>
-</form>
+</head>
+<body class="bg-gray-100 font-sans leading-normal text-gray-800">
+    <form id="game-action-form" hx-post="/game/action" hx-target="#action-response" hx-swap="outerHTML" class="p-4 bg-white shadow-md rounded-md">
+        <input type="hidden" name="match_id" value="{{ match_id }}">
+        <label for="action" class="block text-gray-700">Select Action:</label>
+        <select name="action" required class="border border-gray-300 rounded px-3 py-2 mt-1 mb-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <option value="pocket_ball">Pocket Ball</option>
+            <option value="switch_turn">Switch Turn</option>
+            <option value="end_game">End Game</option>
+        </select>
+        <label for="ball_number" class="block text-gray-700">Ball Number (if applicable):</label>
+        <input type="number" name="ball_number" min="1" max="15" class="border border-gray-300 rounded px-3 py-2 mt-1 mb-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
+        <button type="submit" hx-post="true" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Submit</button>
+    </form>
 </body>
 </html>
