@@ -231,23 +231,18 @@ def game_stats(game_id):
 def current_matches():
     if 'user_id' not in session:
         return 'You must be logged in to view matches', 403
-
     user_id = session['user_id']
     matches = GameState.query.filter(
         (GameState.player1_id == user_id) | (GameState.player2_id == user_id),
         GameState.status == 'in_progress'
     ).all()
-
-    # Include additional data in the options, like game ID and player names
-    options_html = ''.join([
-        f'<option value="{match.id}" '
-        f'data-game-type="{match.game_type}" '
-        f'data-player1="{match.player1.name}" '
-        f'data-player2="{match.player2.name}">'
-        f'{match.player1.name} vs {match.player2.name} - {match.game_type.capitalize()}</option>'
-        for match in matches
-    ])
-    return jsonify(options_html), 200  # Returning JSON response
+    
+    options_html = '<select id="current_match_select" class="border rounded px-2 py-1">'
+    options_html += '<option value="" selected disabled>Select a match</option>'
+    for match in matches:
+        options_html += f'<option value="{match.id}">{match.player1.name} vs {match.player2.name} - {match.game_type.capitalize()}</option>'
+    options_html += '</select>'
+    return options_html
 
 
 
