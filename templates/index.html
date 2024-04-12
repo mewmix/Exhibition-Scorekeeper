@@ -56,34 +56,49 @@
     <section class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <h2 class="text-xl font-semibold mb-4">Game Stats</h2>
         <button 
-            id="load-stats-btn" 
-            hx-get="{{ url_for('game_stats', game_id=1) }}" 
-            hx-target="#stats" 
-            hx-swap="outerHTML"
-            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="button">
-            Load Game Stats
-        </button>
+        id="load-stats-btn"
+        data-base-url="{{ url_for('game_stats', game_id=0)[:-1] }}" 
+        hx-target="#stats" 
+        hx-swap="outerHTML"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        type="button">
+        Load Game Stats
+    </button>
+    
+    
         <div id="stats" class="mt-4"></div>
     </section>
-<script>document.addEventListener('DOMContentLoaded', function() {
-    // Attach the event listener to a parent element
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
     document.body.addEventListener('change', function(event) {
-        // Check if the event target is our select element
         if (event.target && event.target.id === 'current_match_select') {
             var matchId = event.target.value;
             if (matchId) {
+                // Update the game action form
                 fetch(`/game_action_form/${matchId}`)
                     .then(response => response.text())
                     .then(html => {
                         document.getElementById('game_action_form').innerHTML = html;
                     });
+
+                // Manually trigger an HTMX request for loading game stats
+                var baseUrl = document.getElementById('load-stats-btn').getAttribute('data-base-url');
+                var statsUrl = baseUrl + matchId; // Construct the full URL by appending the selected match ID
+                
+                // Use HTMX to make the request
+                htmx.ajax('GET', statsUrl, '#stats', {
+                    'target': '#stats',
+                    'swap': 'outerHTML'
+                });
             }
         }
     });
 });
 
-</script>
+        </script>
+        
+        
+        
 
 </body>
 </html>
