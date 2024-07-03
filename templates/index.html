@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scorekeeper</title>
-    <script src="https://unpkg.com/htmx.org"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.7.0"></script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal text-gray-800">
     <header class="bg-blue-500 text-white text-center py-6">
@@ -15,7 +15,7 @@
 
     <section class="mb-6">
         <h2 class="text-lg mb-4">Start Game</h2>
-        <form hx-post="{{ url_for('start_game') }}" hx-target="#game-status" hx-swap="outerHTML" class="mb-4">
+        <form action="{{ url_for('start_game') }}" method="post" id="start-game-form" class="mb-4" hx-post="{{ url_for('start_game') }}" hx-target="#game-status" hx-swap="innerHTML">
             <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="player1_id" required>
                 {% for player in players %}
                 <option value="{{ player.id }}">{{ player.name }}</option>
@@ -36,69 +36,130 @@
     </section>
 
     <section class="mb-6">
-        <h2 class="text-lg mb-4">Game Actions</h2>
+        <h2 class="text-lg mb-4">Current Matches</h2>
         <div class="mb-4">
             <label for="current_match_select" class="block text-gray-700">Select Current Match:</label>
-            <!-- Make sure to use the correct htmx attributes -->
-<!-- This container will be filled with the select element from /current_matches -->
-<div id="matches_container" hx-get="/current_matches" hx-trigger="load shown" hx-target="#matches_container">
-    <select id="current_match_select" class="border rounded px-2 py-1">
-    </select>
-</div>
-
+            <div id="matches_container">
+                <!-- The select element will be populated dynamically -->
+                <select id="current_match_select" class="border rounded px-2 py-1">
+                    <option value="" selected disabled>Select a match</option>
+                </select>
+            </div>
         </div>
-        <!-- Action form dynamically updated based on the selected match -->
-        <div id="game_action_form"></div>
-        <div id="action-response"></div>
     </section>
-    
-    
-    <section class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <h2 class="text-xl font-semibold mb-4">Game Stats</h2>
+
+    <section class="mb-6">
+        <h2 class="text-lg mb-4">Game Stats</h2>
         <button 
-        id="load-stats-btn"
-        data-base-url="{{ url_for('game_stats', game_id=0)[:-1] }}" 
-        hx-target="#stats" 
-        hx-swap="outerHTML"
-        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-        type="button">
-        Load Game Stats
-    </button>
-    
-    
+            id="load-stats-btn"
+            data-base-url="{{ url_for('game_stats', game_id=0)[:-1] }}"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            type="button">
+            Load Game Stats
+        </button>
         <div id="stats" class="mt-4"></div>
     </section>
+
+    <section class="mb-6">
+        <h2 class="text-lg mb-4">Test POST Form</h2>
+        <form action="/game/action" method="post" id="game-action-form" class="mb-4">
+            <label for="match_id">Match ID:</label>
+            <input type="number" name="match_id" id="match_id" required>
+            <br>
+            <label for="action">Select Action:</label>
+            <select name="action" required>
+                <option value="lag_to_break">Lag to Break</option>
+                <option value="take_break_shot">Break Shot</option>
+                <option value="pocket_ball">Pocket Ball</option>
+                <option value="switch_turn">Switch Turn</option>
+                <option value="end_game">End Game</option>
+            </select>
+            <br>
+            <label for="ball_number">Ball Number (if applicable):</label>
+            <input type="number" name="ball_number" min="0" max="15">
+            <br>
+            <label for="lag_winner">Lag Winner (if applicable):</label>
+            <select name="lag_winner" id="lag_winner">
+                <!-- Options will be populated dynamically based on selected match -->
+            </select>
+            <br>
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Submit</button>
+        </form>
+        <div id="action-response"></div>
+    </section>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-    document.body.addEventListener('change', function(event) {
-        if (event.target && event.target.id === 'current_match_select') {
-            var matchId = event.target.value;
-            if (matchId) {
-                // Update the game action form
-                fetch(`/game_action_form/${matchId}`)
-                    .then(response => response.text())
-                    .then(html => {
-                        document.getElementById('game_action_form').innerHTML = html;
-                    });
-
-                // Manually trigger an HTMX request for loading game stats
-                var baseUrl = document.getElementById('load-stats-btn').getAttribute('data-base-url');
-                var statsUrl = baseUrl + matchId; // Construct the full URL by appending the selected match ID
-                
-                // Use HTMX to make the request
-                htmx.ajax('GET', statsUrl, '#stats', {
-                    'target': '#stats',
-                    'swap': 'outerHTML'
+            // Fetch and populate current matches on load
+            fetch('/current_matches')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('matches_container').innerHTML = html;
                 });
-            }
-        }
-    });
-});
 
-        </script>
-        
-        
-        
+            // Handle change event for match selection
+            document.body.addEventListener('change', function(event) {
+                if (event.target && event.target.id === 'current_match_select') {
+                    var matchId = event.target.value;
+                    if (matchId) {
+                        // Update the game action form
+                        fetch(`/game_action_form/${matchId}`)
+                            .then(response => response.text())
+                            .then(html => {
+                                document.getElementById('game_action_form').innerHTML = html;
+                            });
 
+                        // Fetch players for lag_to_break action
+                        fetch(`/get_players/${matchId}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                const lagWinnerSelect = document.getElementById('lag_winner');
+                                lagWinnerSelect.innerHTML = `
+                                    <option value="${data.player1_name}">${data.player1_name}</option>
+                                    <option value="${data.player2_name}">${data.player2_name}</option>
+                                `;
+                            });
+
+                        // Update the stats button data attribute
+                        document.getElementById('load-stats-btn').setAttribute('data-match-id', matchId);
+                    }
+                }
+            });
+
+            // Handle click event for loading game stats
+            document.getElementById('load-stats-btn').addEventListener('click', function() {
+                var matchId = this.getAttribute('data-match-id');
+                if (matchId) {
+                    var statsUrl = `/game/stats/${matchId}`;
+                    fetch(statsUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            var statsDiv = document.getElementById('stats');
+                            statsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                        });
+                }
+            });
+
+            // Handle the form submission with fetch for game actions
+            document.getElementById('game-action-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const form = event.target;
+                const formData = new FormData(form);
+
+                fetch('/game/action', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('action-response').innerHTML = `<p>${data.message || data.error}</p>`;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+    </script>
 </body>
 </html>

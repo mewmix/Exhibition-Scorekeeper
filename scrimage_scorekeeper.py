@@ -246,14 +246,16 @@ player_1.nineball_points_to_win = nineball_skill_level_points[player_1.nineball_
 player_2.nineball_points_to_win = nineball_skill_level_points[player_2.nineball_player_skill_level]
 
 
+
 class EightballGame:
-    """This class is used to score a game of eightball"""
-    def __init__(self, game = "eightball", break_shot= True, break_and_run = False, current_shooter = None, inning_total = 0, lag_winner = None, eightball_rack_count = 1, eightball_pocketing_context = None,
-                inning_count_at_rack_start = 0, rack_breaking_player = None, match_winner = None, current_shooter_defensive_shot = 0,
-                match_start_timestamp = time.time(), match_start_human_readable = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), match_end_timestamp = None, game_log_iterator = 0, game_log = {}):
+    def __init__(self, player1_name, player2_name, game="eightball", break_shot=True, break_and_run=False, current_shooter=None, inning_total=0, lag_winner=None, eightball_rack_count=1, eightball_pocketing_context=None,
+                 inning_count_at_rack_start=0, rack_breaking_player=None, match_winner=None, current_shooter_defensive_shot=0,
+                 match_start_timestamp=time.time(), match_start_human_readable=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), match_end_timestamp=None, game_log_iterator=0, game_log={}):
         
+        self.player1_name = player1_name
+        self.player2_name = player2_name
         self.game = game
-        self.break_shot = break_shot
+        self.break_shot_taken = break_shot
         self.break_and_run = break_and_run
         self.current_shooter = current_shooter
         self.inning_total = inning_total
@@ -269,11 +271,13 @@ class EightballGame:
         self.match_end_timestamp = match_end_timestamp
         self.game_log_iterator = game_log_iterator
         self.game_log = game_log
+
     def to_json(self):
-        # Convert the game state to a dict suitable for serialization
         game_state = {
+            "player1_name": self.player1_name,
+            "player2_name": self.player2_name,
             "game": self.game,
-            "break_shot": self.break_shot,
+            "break_shot": self.break_shot_taken,
             "break_and_run": self.break_and_run,
             "current_shooter": self.current_shooter,
             "inning_total": self.inning_total,
@@ -291,334 +295,97 @@ class EightballGame:
             "game_log": self.game_log
         }
         return json.dumps(game_state)
-    
-    def ball_pocketed(self, ball_number):
-        # Check if the ball number is valid (1 to 15)
-        if not (1 <= ball_number <= 15):
-            return json.dumps({'error': 'Invalid ball number'}), 400
 
-        # Check if the game is still in progress
-        if self.match_winner:
-            return json.dumps({'error': 'The game is already over'}), 400
+    @staticmethod
+    def from_json(json_str):
+        game_state = json.loads(json_str)
+        return EightballGame(**game_state)
 
-        # Update the game state to reflect the pocketed ball
-        if ball_number == 8:
-            # Special case: Pocketing the 8-ball
-            if self.eightball_rack_count == 1:
-                # If it's the first rack, pocketing the 8-ball wins the game
-                self.match_winner = self.current_shooter
-            else:
-                # If it's not the first rack, pocketing the 8-ball is a foul
-                self.switch_turn()  # Switch turn to the opponent
-                self.current_shooter_defensive_shot += 1  # Increment defensive shot count
-        elif ball_number == 0:
-            # Special case: Pocketing the cue ball (scratch)
-            self.switch_turn()  # Switch turn to the opponent
-            self.current_shooter_defensive_shot += 1  # Increment defensive shot count
+    def lag_for_the_break(self, lag_winner):
+        if lag_winner not in [self.player1_name, self.player2_name]:
+            raise ValueError('Invalid lag winner')
+        
+        self.lag_winner = lag_winner
+        self.rack_breaking_player = lag_winner
+        self.current_shooter = lag_winner
+        self.game_log[self.game_log_iterator] = f'{lag_winner} wins the lag and will break'
+        self.game_log_iterator += 1
+
+    def take_break_shot(self, ball_pocketed=None):
+        if not self.break_shot_taken:
+            raise ValueError('Break shot already taken')
+
+        self.break_shot_taken = False
+        self.game_log[self.game_log_iterator] = f'{self.current_shooter} takes the break shot'
+        self.game_log_iterator += 1
+
+        if ball_pocketed is not None:
+            try:
+                ball_pocketed = int(ball_pocketed)
+            except ValueError:
+                raise ValueError('Invalid ball number')
+
+        if ball_pocketed == 8:
+            self.match_winner = self.current_shooter
+            self.game_log[self.game_log_iterator] = f'{self.current_shooter} wins the game by pocketing the 8-ball on the break'
+        elif ball_pocketed == 0:
+            opponent = self.player1_name if self.current_shooter == self.player2_name else self.player2_name
+            self.match_winner = opponent
+            self.game_log[self.game_log_iterator] = f'{self.current_shooter} scratches on the break. {opponent} wins the game'
+        elif ball_pocketed is not None:
+            self.game_log[self.game_log_iterator] = f'{self.current_shooter} pockets ball {ball_pocketed} on the break'
         else:
-            # Regular ball pocketed
+            self.switch_turn()
+            self.game_log[self.game_log_iterator] = f'No balls pocketed on the break. Turn switches to {self.current_shooter}'
+
+        self.game_log_iterator += 1
+        if self.is_game_over():
+            self.end_game()
+
+    def pocket_ball(self, ball_number):
+        if not (1 <= ball_number <= 15):
+            raise ValueError('Invalid ball number')
+
+        if self.match_winner:
+            raise ValueError('The game is already over')
+
+        if ball_number == 8:
+            self.match_winner = self.current_shooter
+        elif ball_number == 0:
+            self.switch_turn()
+            self.current_shooter_defensive_shot += 1
+        else:
             if self.current_shooter == self.player1_name:
                 self.eightball_pocketing_context = 'player1'
             elif self.current_shooter == self.player2_name:
                 self.eightball_pocketing_context = 'player2'
-        
-        # Update other relevant game state attributes
-        # For example, remove the pocketed ball from the table, update inning count, etc.
 
-        # Log the action
         self.game_log[self.game_log_iterator] = f'Player {self.current_shooter} pocketed ball {ball_number}'
         self.game_log_iterator += 1
-
-        # You may need to implement more complex logic based on your specific game rules
-
-        # Update the turn
         self.switch_turn()
-
-        # Check if the game is over (e.g., if a player has won)
         if self.is_game_over():
             self.end_game()
-    @staticmethod
-    def from_json(json_str):
-        # Convert JSON string back to a dictionary
-        game_state = json.loads(json_str)
-        game = EightballGame(**game_state)
-        return game
-    
-    def update_game_log(self, break_shot = False, inning = False, defensive_shot = False, rack_over = False, match_over = False, push_to_json_file=False, undo=False):
-        """This method will update the game_log dictionary"""
 
-        # Loading the JSON file
-        with open("match_data.json") as file:
-            json_match_data = json.load(file)
-
-        if not push_to_json_file:
-            # Create nested dictionary for each event in the match: lag, innings, defensive shots, rack over
-            if not self.match_start_timestamp in self.game_log:
-                self.game_log.update({
-                    self.match_start_timestamp: {
-                        "Game": self.game,
-                        "Match Start": self.match_start_human_readable,
-                        "Lag Winner": self.lag_winner,
-                        "event_log": {self.game_log_iterator: {}}
-                    }
-                })
-            else:
-                if not undo:
-                    self.game_log[self.match_start_timestamp]["event_log"].update({self.game_log_iterator: {}})
-                else:
-                    last_event = self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator]
-
-            if break_shot:
-                if undo:
-                    self.game_log[self.match_start_timestamp]["event_log"](self.game_log_iterator).pop("break_shot")
-                else:
-                    self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator].update({
-                        "inning_count": self.inning_total,
-                        "break_shot": self.current_shooter
-                    })
-            elif inning:
-                if undo:
-                    self.game_log[self.match_start_timestamp]["event_log"](self.game_log_iterator).pop("inning_count")
-                else:
-                    if "defensive_shot" in list(self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator-1].keys()):
-                        self.game_log_iterator -= 1
-                        self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator].update({
-                            "inning_count": self.inning_total,
-                        })
-                    else:
-                        self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator].update({
-                            "inning_count": self.inning_total,
-                            "current_shooter": self.current_shooter
-                        })
-            elif defensive_shot:
-                if undo:
-                    self.game_log[self.match_start_timestamp]["event_log"](self.game_log_iterator).pop("defensive_shot")
-                else:
-                    self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator].update({
-                        "inning_count": self.inning_total,
-                        "defensive_shot": self.current_shooter
-                    })
-            elif rack_over:
-                if undo:
-                    self.game_log[self.match_start_timestamp]["event_log"](self.game_log_iterator).pop("rack_over")
-                else:
-                    if self.current_shooter == self.lag_winner and self.inning_total == self.inning_count_at_rack_start:
-                        self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator].update({
-                            "inning_count": self.inning_total,
-                            "break_shot": self.current_shooter,
-                            "rack_over": self.eightball_pocketing_context,
-                        })
-                    else:
-                        self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator].update({
-                            "inning_count": self.inning_total,
-                            "current_shooter": self.current_shooter,
-                            "rack_over": self.eightball_pocketing_context,
-                        })
-            elif match_over:
-                if undo:
-                    self.game_log[self.match_start_timestamp]["event_log"](self.game_log_iterator).pop("match_over")
-                else:
-                    self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator].update({
-                        "inning_count": self.inning_total,
-                        "rack_over": self.eightball_pocketing_context,
-                        "match_winner": self.current_shooter
-                    })
-
-            if not undo:
-                self.game_log_iterator += 1
-
+    def switch_turn(self):
+        if self.current_shooter == self.player1_name:
+            self.current_shooter = self.player2_name
         else:
+            self.current_shooter = self.player1_name
 
-            if push_to_json_file:
-                json_match_data.update(self.game_log)
-                with open("match_data.json", "w") as file:
-                    json.dump(json_match_data, file, indent=4)
-        
-    def lag_for_the_break(self, lag_winner):
-        """This method will set the lag winner for the match and the current shooter for the first inning."""
-        # Create a list of the of all different case types, so case type doesn't matter
-        lag_winner_list = [lag_winner, lag_winner.capitalize(), lag_winner.casefold(), lag_winner.lower(), lag_winner.swapcase(), lag_winner.title(), lag_winner.upper()]
+    def is_game_over(self):
+        if self.match_winner:
+            return True
+        return False
 
-        # Winner of the lag is the current shooter, so both are assigned the player that won the lag, and add 1 to the lag winner's profile under lag_won
-        if player_1.player_name in lag_winner_list:
-            self.current_shooter = player_1.player_name
-            self.lag_winner = player_1.player_name
-            player_1.lag_won += 1
-            self.rack_breaking_player = self.current_shooter
-        else:
-            self.current_shooter = player_2.player_name
-            self.lag_winner = player_2.player_name
-            player_2.lag_won += 1
-            self.rack_breaking_player = self.current_shooter
-
-        if self.break_shot:
-            self.update_game_log(break_shot=True)
-        
-        # Add 1 to self.eightball_rack_count
-        self.eightball_rack_count += 1
-
-    def defensive_shot(self, undo=False):
-        """This method will be used to increase the defensive shot count for the current shooter"""
-        if undo:
-            if self.current_shooter == player_1.player_name:
-                player_1.eightball_defensive_shot_total -= 1
-            else:
-                player_2.eightball_defensive_shot_total -= 1
-
-            self.update_game_log(defensive_shot=True, undo=True)        
-            self.current_shooter_defensive_shot = 0
-        else:
-            if self.current_shooter == player_1.player_name:
-                player_1.eightball_defensive_shot_total += 1
-            else:
-                player_2.eightball_defensive_shot_total += 1
-
-            self.current_shooter_defensive_shot = 1
-            self.update_game_log(defensive_shot=True)        
-            self.current_shooter_defensive_shot = 0
-
-    def shooter_turn_over(self, undo=False):
-        """This method will be used to increase the inning count"""
-        if undo:
-            if self.break_shot:
-                self.update_game_log(break_shot=True, undo=True)
-            else:
-                self.update_game_log(inning=True, undo=True)
-
-            # Check for the break_shot and change value to False
-            if "break_shot" in self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator-1]:
-                self.break_shot = False
-            if self.inning_total != self.inning_count_at_rack_start and self.current_shooter in self.game_log[self.match_start_timestamp]["event_log"][self.game_log_iterator-1].values():
-                self.break_and_run = True
-
-            # When the player that lost the lag is done with their turn, add 1 to the inning count
-            # Check if the self.current_shooter lost the lag, if they did, the inning is over, add 1 to self.inning_total
-            if self.current_shooter != self.lag_winner:
-                self.inning_total -= 1
-
-            # Check which player is the self.current_shooter, and update the self.current_shooter to the other player
-            if self.current_shooter == player_1.player_name:
-                self.current_shooter = player_2.player_name
-            else:
-                self.current_shooter = player_1.player_name
-        else:
-            if self.break_shot:
-                self.update_game_log(break_shot=True)
-            else:
-                self.update_game_log(inning=True)
-
-            # Check for the break_shot and change value to False
-            self.break_shot = False
-            self.break_and_run = False
-
-            # When the player that lost the lag is done with their turn, add 1 to the inning count
-            # Check if the self.current_shooter lost the lag, if they did, the inning is over, add 1 to self.inning_total
-            if self.current_shooter != self.lag_winner:
-                self.inning_total += 1
-
-            # Check which player is the self.current_shooter, and update the self.current_shooter to the other player
-            if self.current_shooter == player_1.player_name:
-                self.current_shooter = player_2.player_name
-            else:
-                self.current_shooter = player_1.player_name
-
-    def rack_over(self, eight_on_the_break = False, break_and_run = False, made_eightball = False, scratched_on_eightball = False, eightball_in_wrong_pocket = False, made_eightball_early = False):
-        """This method is used to reset the rack and will ultimately execute the json update at the end of the match"""
-        # Check the manner in which the eightball was pocketed and update self.eightball_pocketing_context
-        if eight_on_the_break:
-            if self.inning_count_at_rack_start == self.inning_total and self.current_shooter == self.rack_breaking_player:
-                self.game_log_iterator -= 1
-            if self.current_shooter == player_1.player_name:
-                player_1.eightball_eight_on_the_break += 1
-                player_1.eightball_racks_won += 1
-                self.eightball_pocketing_context = "eight on the break"
-            else:
-                player_2.eightball_eight_on_the_break += 1
-                player_2.eightball_racks_won += 1
-                self.eightball_pocketing_context = "eight on the break"
-        elif break_and_run:
-            if self.inning_count_at_rack_start == self.inning_total and self.current_shooter == self.rack_breaking_player:
-                self.game_log_iterator -= 1
-            if self.current_shooter == player_1.player_name:
-                player_1.eightball_break_and_run += 1
-                player_1.eightball_racks_won += 1
-                self.eightball_pocketing_context = "break and run"
-            else:
-                player_2.eightball_break_and_run += 1
-                player_2.eightball_racks_won += 1
-                self.eightball_pocketing_context = "break and run"
-        elif made_eightball:
-            if self.current_shooter == player_1.player_name:
-                player_1.eightball_racks_won += 1
-                self.eightball_pocketing_context = "made the eightball"
-            else:
-                player_2.eightball_racks_won += 1
-                self.eightball_pocketing_context = "made the eightball"
-        elif scratched_on_eightball or eightball_in_wrong_pocket or made_eightball_early:
-            if self.current_shooter == player_1.player_name:
-                player_2.eightball_racks_won += 1
-                self.eightball_pocketing_context = "scratched on the eight"
-            else:
-                player_1.eightball_racks_won += 1
-                self.eightball_pocketing_context = "scratched on the eight"
-
-        if self.eightball_pocketing_context == "break and run" or self.eightball_pocketing_context == "eight on the break":
-            if self.game_log_iterator == 0 and self.break_shot:
-                pass
-            else:
-                self.game_log_iterator += 1
-
-        # Check for a match winner based PlayerStats class properties
-        if player_1.eightball_racks_to_win == player_1.eightball_racks_won:
-            self.match_winner = player_1.player_name
-            player_1.eightball_matches_won += 1
-            if player_2.eightball_racks_won == 0:
-                player_1.eightball_points_total = 3
-                player_2.eightball_points_total = 0
-            elif player_2.eightball_racks_won + 1 == player_2.eightball_racks_to_win:
-                player_1.eightball_points_total = 2
-                player_2.eightball_points_total = 1
-            else:
-                player_1.eightball_points_total = 2
-                player_2.eightball_points_total = 0
-        elif player_2.eightball_racks_to_win == player_2.eightball_racks_won:
-            self.match_winner = player_2.player_name
-            player_2.eightball_matches_won += 1
-            if player_1.eightball_racks_won == 0:
-                player_2.eightball_points_total = 3
-                player_1.eightball_points_total = 0
-            elif player_1.eightball_racks_won + 1 == player_1.eightball_racks_to_win:
-                player_2.eightball_points_total = 2
-                player_1.eightball_points_total = 1
-            else:
-                player_2.eightball_points_total = 2
-                player_1.eightball_points_total = 0
-
-        # Check for a match winner, if None, reset properties to rack starting configuration
-        if self.match_winner == None:
-            self.inning_count_at_rack_start = self.inning_total
-            self.rack_breaking_player = self.current_shooter
-            self.eightball_rack_count += 1
-            self.break_shot = True
-            self.eightball_break_and_run = True
-            self.update_game_log(rack_over=True)
-        else:
-            player_1.eightball_matches_played += 1
-            player_2.eightball_matches_played += 1
-            print(f"Match over, {self.match_winner} is the winner!")
-
-            # Update json files
-            self.match_end_timestamp = time.localtime()
-            self.update_game_log(match_over=True)
-            player_1.update_json_file_player_stats()
-            player_2.update_json_file_player_stats()
-            current_match.update_game_log(push_to_json_file=True)
+    def end_game(self):
+        self.match_end_timestamp = time.time()
+        self.game_log[self.game_log_iterator] = f'Player {self.current_shooter} wins the game'
+        self.game_log_iterator += 1
 
 
 class NineballGame:
-    """This class is used to score a game of nineball"""
-    def __init__(self, game = "nineball", break_shot= True, break_and_run = False, current_shooter = None, inning_total = 0, lag_winner = None, nineball_rack = [1, 2, 3, 4, 5, 6, 7, 8, 9], nineball_rack_count = 0,
-                inning_count_at_rack_start = 0, rack_breaking_player = None, dead_balls = [], player_1_balls_pocketed = [], player_2_balls_pocketed = [], match_winner = None):
+    def __init__(self, game="nineball", break_shot=True, break_and_run=False, current_shooter=None, inning_total=0, lag_winner=None, nineball_rack=[1, 2, 3, 4, 5, 6, 7, 8, 9], nineball_rack_count=0,
+                inning_count_at_rack_start=0, rack_breaking_player=None, dead_balls=[], player_1_balls_pocketed=[], player_2_balls_pocketed=[], match_winner=None):
         
         self.game = game
         self.break_shot = break_shot
@@ -634,119 +401,27 @@ class NineballGame:
         self.player_1_balls_pocketed = player_1_balls_pocketed
         self.player_2_balls_pocketed = player_2_balls_pocketed
         self.match_winner = match_winner
-        
-    def lag_for_the_break(self, lag_winner):
-        """This method will set the lag winner for the match and the current shooter for the first inning."""
-        # Create a list of the of all different case types, so case type doesn't matter
-        lag_winner_list = [lag_winner, lag_winner.capitalize(), lag_winner.casefold(), lag_winner.lower(), lag_winner.swapcase(), lag_winner.title(), lag_winner.upper()]
 
-        # Add 1 to self.nineball_rack_count
-        self.nineball_rack_count += 1
+    def to_json(self):
+        game_state = {
+            "game": self.game,
+            "break_shot": self.break_shot,
+            "break_and_run": self.break_and_run,
+            "current_shooter": self.current_shooter,
+            "inning_total": self.inning_total,
+            "lag_winner": self.lag_winner,
+            "nineball_rack": self.nineball_rack,
+            "nineball_rack_count": self.nineball_rack_count,
+            "inning_count_at_rack_start": self.inning_count_at_rack_start,
+            "rack_breaking_player": self.rack_breaking_player,
+            "dead_balls": self.dead_balls,
+            "player_1_balls_pocketed": self.player_1_balls_pocketed,
+            "player_2_balls_pocketed": self.player_2_balls_pocketed,
+            "match_winner": self.match_winner
+        }
+        return json.dumps(game_state)
 
-        # Winner of the lag is the current shooter, so both are assigned the player that won the lag, and add 1 to the lag winner's profile under lag_won
-        if player_1.player_name in lag_winner_list:
-            self.current_shooter = player_1.player_name
-            self.lag_winner = player_1.player_name
-            player_1.lag_won += 1
-            self.rack_breaking_player = self.current_shooter
-        else:
-            self.current_shooter = player_2.player_name
-            self.lag_winner = player_2.player_name
-            player_2.lag_won += 1
-            self.rack_breaking_player = self.current_shooter
-
-    def ball_pocketed(self, ball, dead = False):
-        """This method is used to mark pocketed balls"""
-        # Check for a nine_on_the_snap
-        if self.break_shot and ball == 9 and not dead:
-            if self.current_shooter == player_1.player_name:
-                player_1.nineball_nine_on_the_snap += 1
-            else:
-                player_2.nineball_nine_on_the_snap += 1
-        
-        # Remove ball just pocketed self.nineball_rack
-        self.nineball_rack.remove(ball)
-
-        # Check if the pocketed ball is dead
-        if dead:
-            self.dead_balls.append(ball)
-    
-        # Check self.current_shooter so the ball can be applied to the correct player, the ball 9 is worth 2 points
-        elif self.current_shooter == player_1.player_name:
-            self.player_1_balls_pocketed.append(ball)
-            if ball == 9:
-                player_1.nineball_match_ball_count += 2
-            else:
-                player_1.nineball_match_ball_count += 1
-                current_match.break_shot = False
-        else:
-            self.player_2_balls_pocketed.append(ball)
-            if ball == 9:
-                player_2.nineball_match_ball_count += 2
-            else:
-                player_2.nineball_match_ball_count += 1
-                current_match.break_shot = False
-
-        # Check for a break_and_run
-        if ball == 9 and self.break_and_run and not self.break_shot and len(self.nineball_rack) == 0:
-            if self.current_shooter == player_1.player_name:
-                player_1.nineball_break_and_run += 1
-            else:
-                player_2.nineball_break_and_run += 1
-
-        # Check the ball count for each player, and add 1 to the winner's profile
-        if player_1.nineball_match_ball_count == player_1.nineball_points_to_win:
-            self.match_winner = player_1.player_name
-            player_1.nineball_matches_won += 1
-            player_1.nineball_points_total = 20 - nineball_loser_points_matrix[player_2.nineball_player_skill_level][player_2.nineball_match_ball_count]
-            player_2.nineball_points_total = nineball_loser_points_matrix[player_2.nineball_player_skill_level][player_2.nineball_match_ball_count]
-        elif player_2.nineball_match_ball_count == player_2.nineball_points_to_win:
-            self.match_winner = player_2.player_name
-            player_2.nineball_matches_won += 1
-            player_2.nineball_points_total = 20 - nineball_loser_points_matrix[player_1.nineball_player_skill_level][player_1.nineball_match_ball_count]
-            player_1.nineball_points_total = nineball_loser_points_matrix[player_1.nineball_player_skill_level][player_1.nineball_match_ball_count]
-
-        # Add 1 to each player's profile under nineball_matches_played and declare the winner of the match
-        if self.match_winner != None:
-            player_1.nineball_matches_played += 1
-            player_2.nineball_matches_played += 1
-            print(f"Match over, {self.match_winner} is the winner!")
-
-        if ball == 9:
-            current_match.rack_over()
-
-    def defensive_shot(self):
-        if self.current_shooter == player_1.player_name:
-            player_1.nineball_defensive_shot_total += 1
-        else:
-            player_2.nineball_defensive_shot_total += 1
-
-    def shooter_turn_over(self):
-        """This method will be used to increase the inning count"""
-        # Check for the break_shot and change value to False
-        self.break_shot = False
-        self.break_and_run = False
-
-        # When the player that lost the lag is done with their turn, add 1 to the inning count
-        # Check if the self.current_shooter lost the lag, if they did, the inning is over, add 1 to self.inning_total
-        if self.current_shooter != self.lag_winner:
-            self.inning_total += 1
-
-        # Check which player is the self.current_shooter, and update the self.current_shooter to the other player
-        if self.current_shooter == player_1.player_name:
-            self.current_shooter = player_2.player_name
-        else:
-            self.current_shooter = player_1.player_name
-
-    def rack_over(self):
-        """This method is used to reset the rack"""
-        self.inning_count_at_rack_start = self.inning_total
-        self.rack_breaking_player = self.current_shooter
-        self.nineball_rack_count += 1
-        self.nineball_rack  = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        self.dead_balls = []
-        self.break_shot = True
-        self.break_and_run = True
-        self.player_1_balls_pocketed = []
-        self.player_2_balls_pocketed = []
-
+    @staticmethod
+    def from_json(json_str):
+        game_state = json.loads(json_str)
+        return NineballGame(**game_state)
