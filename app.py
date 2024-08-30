@@ -2,7 +2,7 @@ from flask import Flask, request, session, jsonify, render_template, url_for, re
 from flask_cors import CORS
 import json
 import time
-from scrimage_scorekeeper import EightballGame, NineballGame, PlayerStats
+from core.scrimage_scorekeeper import EightballGame, NineballGame, PlayerStats
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt  # For password hashing
 import logging
@@ -17,26 +17,6 @@ db = SQLAlchemy(app)
 CORS(app)
 bcrypt = Bcrypt(app)
 
-class GameState(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    player1_id = db.Column(db.Integer, db.ForeignKey('player.id'), nullable=False)
-    player2_id = db.Column(db.Integer, db.ForeignKey('player.id'), nullable=False)
-    game_type = db.Column(db.String(50))  # To store '8ball' or '9ball'
-    current_state = db.Column(db.Text)  # Serialized game state
-    status = db.Column(db.String(50), default='in_progress')  # e.g., 'in_progress', 'finished'
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-
-    player1 = db.relationship('Player', foreign_keys=[player1_id])
-    player2 = db.relationship('Player', foreign_keys=[player2_id])
-
-    @property
-    def player1_name(self):
-        return self.player1.name
-
-    @property
-    def player2_name(self):
-        return self.player2.name
 
 class Player(db.Model):
     id = db.Column(db.Integer, primary_key=True)

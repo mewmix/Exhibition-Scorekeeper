@@ -2,7 +2,7 @@ import json
 import time
 import os
 from pprint import pprint
-from point_matrix import eightball_points_matrix, nineball_loser_points_matrix, nineball_skill_level_points
+from core.point_matrix import eightball_points_matrix, nineball_loser_points_matrix, nineball_skill_level_points
 
 class PlayerStats:
     """This class will be used to create Player Profiles (no auth), for both eightball and nineball. This will serve as the record, recording scores for specific matches will not happen in the function."""
