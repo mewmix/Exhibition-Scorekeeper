@@ -231,7 +231,6 @@ def game_action_form(match_id):
     game_state = GameState.query.get_or_404(match_id)
     form_template = f"{game_state.game_type}_form.html"
     return render_template(form_template, match_id=match_id)
-
 @app.route('/game/action', methods=['POST'])
 def game_action():
     try:
@@ -257,16 +256,20 @@ def game_action():
             return jsonify({'error': 'Invalid action'}), 400
 
         if game_type == '8ball':
+            valid_keys = ['current_turn', 'balls_remaining']  # Only include keys not explicitly passed
+            filtered_state = {k: v for k, v in current_state.items() if k in valid_keys}
             current_game = EightballGame(
-                player1_name=game_state_record.player1.name,
-                player2_name=game_state_record.player2.name,
-                **{k: v for k, v in current_state.items() if k not in ('player1_name', 'player2_name')}
+                player1_name=game_state_record.player1_name,
+                player2_name=game_state_record.player2_name,
+                **filtered_state
             )
         elif game_type == '9ball':
+            valid_keys = ['rack_state', 'current_turn']  # Only include keys not explicitly passed
+            filtered_state = {k: v for k, v in current_state.items() if k in valid_keys}
             current_game = NineballGame(
-                player1_name=game_state_record.player1.name,
-                player2_name=game_state_record.player2.name,
-                **{k: v for k, v in current_state.items() if k not in ('player1_name', 'player2_name')}
+                player1_name=game_state_record.player1_name,
+                player2_name=game_state_record.player2_name,
+                **filtered_state
             )
         else:
             return jsonify({'error': 'Invalid game type'}), 400
@@ -304,7 +307,6 @@ def game_action():
     except Exception as e:
         logging.error(f"Server error: {str(e)}")
         return jsonify({'error': 'Server error', 'details': str(e)}), 500
-
 
 if __name__ == '__main__':
     with app.app_context():
