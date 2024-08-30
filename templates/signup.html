@@ -12,7 +12,7 @@
 <body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-semibold mb-4">Signup</h1>
-        <form id="signup-form" hx-post="{{ url_for('signup') }}" hx-target="#signup-message" class="max-w-md">
+        <form id="signup-form" hx-post="{{ url_for('auth.signup') }}" hx-target="#signup-message" class="max-w-md">
             <div class="mb-4">
                 <label for="name" class="block text-gray-700">Username:</label>
                 <input type="text" id="name" name="name" required class="form-input mt-1 block w-full">
@@ -28,7 +28,7 @@
         <div id="signup-message" hx-swap="outerHTML" class="mt-4"></div>
 
         <!-- Link to navigate to login page -->
-        <a href="{{ url_for('login') }}" class="text-blue-500 hover:underline">Login</a>
+        <a href="{{ url_for('auth.login') }}" class="text-blue-500 hover:underline">Login</a>
     </div>
 </body>
 </html>

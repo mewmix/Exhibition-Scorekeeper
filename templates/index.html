@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.7.0"></script>
-    <script src= "script.js"></script>
+    <script src= "{{url_for('static', filename='script.js')}}"></script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal text-gray-800">
     <header class="bg-blue-500 text-white text-center py-6">
@@ -16,7 +16,7 @@
 
     <section class="mb-6">
         <h2 class="text-lg mb-4">Start Game</h2>
-        <form action="{{ url_for('start_game') }}" method="post" id="start-game-form" class="mb-4" hx-post="{{ url_for('start_game') }}" hx-target="#game-status" hx-swap="innerHTML">
+        <form action="{{ url_for('game.start_game') }}" method="post" id="start-game-form" class="mb-4" hx-post="{{ url_for('game.start_game') }}" hx-target="#game-status" hx-swap="innerHTML">
             <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="player1_id" required>
                 {% for player in players %}
                 <option value="{{ player.id }}">{{ player.name }}</option>
@@ -35,32 +35,34 @@
         </form>
         <div id="game-status"></div>
     </section>
-
     <section class="mb-6">
         <h2 class="text-lg mb-4">Current Matches</h2>
         <div class="mb-4">
             <label for="current_match_select" class="block text-gray-700">Select Current Match:</label>
-            <div id="matches_container">
+            <div id="matches_container" hx-get="{{ url_for('game.current_matches') }}" hx-trigger="load" hx-target="#matches_container" hx-swap="innerHTML">
                 <!-- The select element will be populated dynamically -->
                 <select id="current_match_select" class="border rounded px-2 py-1">
                     <option value="" selected disabled>Select a match</option>
                 </select>
-            </div>
+            </div>            
         </div>
     </section>
-
+    
     <section class="mb-6">
         <h2 class="text-lg mb-4">Game Stats</h2>
         <button 
-            id="load-stats-btn"
-            data-base-url="{{ url_for('game_stats', game_id=0)[:-1] }}"
-            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="button">
-            Load Game Stats
+        id="load-stats-btn"
+        hx-target="#stats" 
+        hx-swap="innerHTML"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        type="button"
+        disabled>
+        Load Game Stats
         </button>
+        
         <div id="stats" class="mt-4"></div>
     </section>
-
+    
     <section class="mb-6">
         <h2 class="text-lg mb-4">Test POST Form</h2>
         <form action="/game/action" method="post" id="game-action-form" class="mb-4">
