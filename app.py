@@ -43,6 +43,7 @@ class Player(db.Model):
     name = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
     lags_won = db.Column(db.Integer, default=0)
+    is_admin = db.Column(db.Boolean, default=False)  
     eightball_stats = db.relationship('EightballStats', backref='player', lazy=True)
     nineball_stats = db.relationship('NineballStats', backref='player', lazy=True)
 
@@ -89,6 +90,32 @@ class NineballStats(db.Model):
 def load_player_names():
     players = Player.query.with_entities(Player.name).all()
     return [player.name for player in players]
+
+@app.route('/create_test_users')
+def create_test_users():
+    # Password hashing for all users
+    def hash_password(password):
+        return bcrypt.generate_password_hash(password).decode('utf-8')
+    
+    # Test users
+    test_users = [
+        {'name': 'Player1', 'password': hash_password('password1'), 'is_admin': False},
+        {'name': 'Player2', 'password': hash_password('password2'), 'is_admin': False},
+        {'name': 'Player3', 'password': hash_password('password3'), 'is_admin': False},
+        {'name': 'Player4', 'password': hash_password('password4'), 'is_admin': False},
+        {'name': 'AdminUser', 'password': hash_password('adminpassword'), 'is_admin': True},
+    ]
+    
+    # Add users to the database
+    for user_data in test_users:
+        user = Player.query.filter_by(name=user_data['name']).first()
+        if not user:
+            new_user = Player(**user_data)
+            db.session.add(new_user)
+    
+    db.session.commit()
+    return jsonify({'message': 'Test users created successfully'}), 201
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -180,7 +207,6 @@ def start_game():
     db.session.commit()
 
     return render_template('partials/game_started.html', game_type=game_type.title(), game_id=new_game_state.id), 201
-
 @app.route('/game/stats/<int:game_id>', methods=['GET'])
 def game_stats(game_id):
     game_state = GameState.query.get(game_id)
@@ -189,7 +215,9 @@ def game_stats(game_id):
         return jsonify({'error': 'Game not found'}), 404
     
     user_id = session.get('user_id')
-    if game_state.player1_id != user_id and game_state.player2_id != user_id:
+    current_user = Player.query.get(user_id)
+
+    if not current_user.is_admin and game_state.player1_id != user_id and game_state.player2_id != user_id:
         return jsonify({'error': 'Unauthorized access'}), 403
 
     game_state_dict = json.loads(game_state.current_state)
@@ -200,18 +228,28 @@ def game_stats(game_id):
 def current_matches():
     if 'user_id' not in session:
         return 'You must be logged in to view matches', 403
+
     user_id = session['user_id']
-    matches = GameState.query.filter(
-        (GameState.player1_id == user_id) | (GameState.player2_id == user_id),
-        GameState.status == 'in_progress'
-    ).all()
+    current_user = Player.query.get(user_id)
+
+    if current_user.is_admin:
+        # Admin sees all matches
+        matches = GameState.query.all()
+    else:
+        # Regular users see only their own matches
+        matches = GameState.query.filter(
+            (GameState.player1_id == user_id) | (GameState.player2_id == user_id),
+            GameState.status == 'in_progress'
+        ).all()
     
     options_html = '<select id="current_match_select" class="border rounded px-2 py-1">'
     options_html += '<option value="" selected disabled>Select a match</option>'
     for match in matches:
         options_html += f'<option value="{match.id}">{match.player1.name} vs {match.player2.name} - {match.game_type.capitalize()}</option>'
     options_html += '</select>'
+    
     return options_html
+
 @app.route('/get_players/<int:match_id>')
 def get_players(match_id):
     game_state = GameState.query.get(match_id)
@@ -248,6 +286,11 @@ def game_action():
         game_state_record = GameState.query.filter_by(id=match_id).first()
         if not game_state_record:
             return jsonify({'error': 'Match not found'}), 404
+
+        current_user = Player.query.get(user_id)
+        if not current_user.is_admin:
+            if game_state_record.player1_id != user_id and game_state_record.player2_id != user_id:
+                return jsonify({'error': 'Unauthorized access'}), 403
 
         game_type = game_state_record.game_type
         current_state = json.loads(game_state_record.current_state)
