@@ -1,3 +1,25 @@
+function handleActionChange() {
+    const action = document.getElementById('action').value;
+    const ballNumberField = document.getElementById('ball_number');
+    const lagWinnerField = document.getElementById('lag_winner');
+
+    // Clear or disable fields based on the selected action
+    if (action === 'lag_to_break') {
+        ballNumberField.value = '';
+        ballNumberField.disabled = true;
+        lagWinnerField.disabled = false;
+    } else if (action === 'take_break_shot' || action === 'pocket_ball') {
+        lagWinnerField.value = '';
+        lagWinnerField.disabled = true;
+        ballNumberField.disabled = (action !== 'pocket_ball');
+    } else {
+        ballNumberField.value = '';
+        lagWinnerField.value = '';
+        ballNumberField.disabled = true;
+        lagWinnerField.disabled = true;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Fetch and populate current matches on load
     fetch('/current_matches')
@@ -24,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch(`/game_action_form/${matchId}`)
                     .then(response => response.text())
                     .then(html => {
-                        document.getElementById('game_action_form').innerHTML = html;
+                        document.getElementById('game-action-form').innerHTML = html;
 
                         // Ensure hidden input is set after form update
                         const updatedMatchIdInput = document.getElementById('match_id');
@@ -85,6 +107,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('action-response').innerHTML = `<p>${data.message || data.error}</p>`;
+                    // Update stats after action
+                    const statsButton = document.getElementById('load-stats-btn');
+                    if (statsButton) {
+                        statsButton.click();
+                    }
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -104,9 +131,26 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(statsUrl)
                 .then(response => response.json())
                 .then(data => {
-                    var statsDiv = document.getElementById('stats');
-                    statsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    var statsContent = document.getElementById('stats-content');
+                    statsContent.innerHTML = `
+                        <p><strong>Current Shooter:</strong> ${data.current_shooter}</p>
+                        <p><strong>Break and Run:</strong> ${data.break_and_run}</p>
+                        <p><strong>Inning Total:</strong> ${data.inning_total}</p>
+                        <p><strong>Game Log:</strong> ${formatGameLog(data.game_log)}</p>
+                    `;
+                    // Display the modal
+                    document.getElementById('stats-modal').classList.remove('hidden');
                 });
         }
+    });
+
+    // Function to format the game log nicely
+    function formatGameLog(gameLog) {
+        return Object.keys(gameLog).map(key => `<p>${gameLog[key]}</p>`).join('');
+    }
+
+    // Close modal button
+    document.getElementById('close-modal').addEventListener('click', function() {
+        document.getElementById('stats-modal').classList.add('hidden');
     });
 });
