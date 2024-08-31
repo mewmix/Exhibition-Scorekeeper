@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.7.0"></script>
-    <script src= "{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal text-gray-800">
     <header class="bg-blue-500 text-white text-center py-6">
@@ -60,12 +60,13 @@
         </button>
         <div id="stats" class="mt-4"></div>
     </section>
+
     <section class="mb-6">
-        <h2 class="text-lg mb-4">Test POST Form</h2>
+        <h2 class="text-lg mb-4">Game Action Form</h2>
         <form action="/game/action" method="post" id="game-action-form" class="mb-4">
-            <label for="match_id">Match ID:</label>
-            <input type="number" name="match_id" id="match_id" required>
-            <br>
+            <!-- Hidden input to store match ID -->
+            <input type="hidden" id="match_id" name="match_id">
+            
             <label for="action">Select Action:</label>
             <select name="action" id="action" required onchange="handleActionChange()">
                 <option value="lag_to_break">Lag to Break</option>
@@ -87,7 +88,7 @@
         </form>
         <div id="action-response"></div>
     </section>
-    
+
     <script>
     function handleActionChange() {
         const action = document.getElementById('action').value;
