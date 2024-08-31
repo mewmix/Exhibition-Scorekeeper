@@ -252,25 +252,10 @@ def game_action():
         game_type = game_state_record.game_type
         current_state = json.loads(game_state_record.current_state)
 
-        if action not in ['lag_to_break', 'take_break_shot', 'pocket_ball', 'switch_turn', 'end_game']:
-            return jsonify({'error': 'Invalid action'}), 400
-
         if game_type == '8ball':
-            valid_keys = ['current_turn', 'balls_remaining']  # Only include keys not explicitly passed
-            filtered_state = {k: v for k, v in current_state.items() if k in valid_keys}
-            current_game = EightballGame(
-                player1_name=game_state_record.player1_name,
-                player2_name=game_state_record.player2_name,
-                **filtered_state
-            )
+            current_game = EightballGame.from_json(game_state_record.current_state)
         elif game_type == '9ball':
-            valid_keys = ['rack_state', 'current_turn']  # Only include keys not explicitly passed
-            filtered_state = {k: v for k, v in current_state.items() if k in valid_keys}
-            current_game = NineballGame(
-                player1_name=game_state_record.player1_name,
-                player2_name=game_state_record.player2_name,
-                **filtered_state
-            )
+            current_game = NineballGame.from_json(game_state_record.current_state)
         else:
             return jsonify({'error': 'Invalid game type'}), 400
 
@@ -280,20 +265,18 @@ def game_action():
             elif action == 'take_break_shot':
                 current_game.take_break_shot(ball_pocketed=ball_number)
             elif action == 'pocket_ball' and ball_number is not None:
-                try:
-                    ball_number = int(ball_number)
-                except ValueError:
-                    return jsonify({'error': 'Invalid ball number'}), 400
-                valid_ball = (1 <= ball_number <= 15 if game_type == '8ball' else 1 <= ball_number <= 9)
-                if not valid_ball:
-                    return jsonify({'error': 'Invalid ball number for the game type'}), 400
+                ball_number = int(ball_number)
                 current_game.pocket_ball(ball_number)
             elif action == 'switch_turn':
                 current_game.switch_turn()
             elif action == 'end_game':
                 current_game.end_game()
 
-            game_state_record.current_state = json.dumps(current_game.__dict__)
+            # Update the game log before saving
+            existing_log = json.loads(game_state_record.current_state)["game_log"]
+            current_game.game_log.update(existing_log)  # Combine old and new logs
+
+            game_state_record.current_state = current_game.to_json()
             db.session.commit()
 
             return jsonify({
