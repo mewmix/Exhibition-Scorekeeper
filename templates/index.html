@@ -11,95 +11,120 @@
 </head>
 <body class="bg-gray-100 font-sans leading-normal text-gray-800">
     <header class="bg-blue-500 text-white text-center py-6">
-        <h1 class="text-xl font-bold">Scorekeeper</h1>
+        <h1 class="text-xl font-bold">🎱 Scorekeeper</h1>
     </header>
 
-    <section class="mb-6">
-        <h2 class="text-lg mb-4">Start Game</h2>
-        <form action="{{ url_for('start_game') }}" method="post" id="start-game-form" class="mb-4" hx-post="{{ url_for('start_game') }}" hx-target="#game-status" hx-swap="innerHTML">
-            <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="player1_id" required>
-                {% for player in players %}
-                <option value="{{ player.id }}">{{ player.name }}</option>
-                {% endfor %}
-            </select>
-            <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="player2_id" required>
-                {% for player in players %}
-                <option value="{{ player.id }}">{{ player.name }}</option>
-                {% endfor %}
-            </select>
-            <select class="border rounded px-2 py-1 text-gray-700 mr-2" name="game_type" required>
-                <option value="8ball">8-Ball</option>
-                <option value="9ball">9-Ball</option>
-            </select>
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Start Game</button>
-        </form>
-        <div id="game-status"></div>
-    </section>
+    <!-- Accordion Container -->
+    <div class="accordion-container mx-4 my-6 space-y-4">
+        <!-- Start Game Accordion -->
+        <div class="accordion-item">
+            <h2 class="accordion-header bg-blue-500 text-white py-3 px-4 rounded-lg cursor-pointer">
+                🏁 Start Game
+            </h2>
+            <div class="accordion-content bg-white rounded-lg shadow p-4 hidden">
+                <form action="{{ url_for('start_game') }}" method="post" id="start-game-form">
+                    <select class="border rounded px-2 py-1 text-gray-700 mr-2 w-full mb-2" name="player1_id" required>
+                        {% for player in players %}
+                        <option value="{{ player.id }}">{{ player.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="border rounded px-2 py-1 text-gray-700 mr-2 w-full mb-2" name="player2_id" required>
+                        {% for player in players %}
+                        <option value="{{ player.id }}">{{ player.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="border rounded px-2 py-1 text-gray-700 mr-2 w-full mb-4" name="game_type" required>
+                        <option value="8ball">8-Ball</option>
+                        <option value="9ball">9-Ball</option>
+                    </select>
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full" type="submit">Start Game</button>
+                </form>
+            </div>
+        </div>
 
-    <section class="mb-6">
-        <h2 class="text-lg mb-4">Current Matches</h2>
-        <div class="mb-4">
-            <label for="current_match_select" class="block text-gray-700">Select Current Match:</label>
-            <div id="matches_container">
-                <!-- The select element will be populated dynamically -->
-                <select id="current_match_select" class="border rounded px-2 py-1">
-                    <option value="" selected disabled>Select a match</option>
-                </select>
+        <!-- Current Matches Accordion -->
+        <div class="accordion-item">
+            <h2 class="accordion-header bg-blue-500 text-white py-3 px-4 rounded-lg cursor-pointer">
+                🎯 Current Matches
+            </h2>
+            <div class="accordion-content bg-white rounded-lg shadow p-4 hidden">
+                <label for="current_match_select" class="block text-gray-700 mb-2">Select Current Match:</label>
+                <div id="matches_container">
+                    <select id="current_match_select" class="border rounded px-2 py-1 w-full">
+                        <option value="" selected disabled>Select a match</option>
+                    </select>
+                </div>
             </div>
         </div>
-    </section>
-    <section class="mb-6 game-stats-section">
-        <h2 class="section-title">Game Stats</h2>
-        <button 
-            id="load-stats-btn"
-            data-base-url="{{ url_for('game_stats', game_id=0)[:-1] }}"
-            class="button blue-button"
-            type="button">
-            Load Game Stats
-        </button>
-        <div id="stats" class="mt-4 stats-container">
-            <!-- Game stats will be dynamically injected here -->
-            <div id="game-stats-content" class="game-stats-content">
-                <!-- This content will be dynamically populated -->
+
+        <!-- Game Stats Accordion -->
+        <div class="accordion-item">
+            <h2 class="accordion-header bg-blue-500 text-white py-3 px-4 rounded-lg cursor-pointer">
+                📊 Game Stats
+            </h2>
+            <div class="accordion-content bg-white rounded-lg shadow p-4 hidden">
+                <button 
+                    id="load-stats-btn"
+                    data-base-url="{{ url_for('game_stats', game_id=0)[:-1] }}"
+                    class="button blue-button w-full">
+                    Load Game Stats
+                </button>
+                <div id="stats" class="mt-4 stats-container">
+                    <div id="game-stats-content" class="game-stats-content">
+                        <!-- Dynamic Content -->
+                    </div>
+                </div>
             </div>
         </div>
-    </section>
-    
-    <section class="mb-6">
-        <h2 class="text-lg mb-4">Game Action Form</h2>
-        <form action="/game/action" method="post" id="game-action-form" class="mb-4">
-            <!-- Hidden input to store match ID -->
-            <input type="hidden" id="match_id" name="match_id">
-            
-            <label for="action">Select Action:</label>
-            <select name="action" id="action" required onchange="handleActionChange()">
-                <option value="lag_to_break">Lag to Break</option>
-                <option value="take_break_shot">Break Shot</option>
-                <option value="pocket_ball">Pocket Ball</option>
-                <option value="switch_turn">Switch Turn</option>
-                <option value="end_game">End Game</option>
-            </select>
-            <br>
-            <label for="ball_number">Ball Number (if applicable):</label>
-            <input type="number" name="ball_number" id="ball_number" min="0" max="15">
-            <br>
-            <label for="lag_winner">Lag Winner (if applicable):</label>
-            <select name="lag_winner" id="lag_winner">
-                <!-- Options will be populated dynamically based on selected match -->
-            </select>
-            <br>
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Submit</button>
-        </form>
-        <div id="action-response"></div>
-    </section>
+
+        <!-- Game Action Accordion -->
+        <div class="accordion-item">
+            <h2 class="accordion-header bg-blue-500 text-white py-3 px-4 rounded-lg cursor-pointer">
+                🎮 Game Action
+            </h2>
+            <div class="accordion-content bg-white rounded-lg shadow p-4 hidden">
+                <form action="/game/action" method="post" id="game-action-form">
+                    <input type="hidden" id="match_id" name="match_id">
+                    
+                    <label for="action" class="block text-gray-700 mb-2">Select Action:</label>
+                    <select name="action" id="action" class="w-full mb-4" required onchange="handleActionChange()">
+                        <option value="lag_to_break">Lag to Break</option>
+                        <option value="take_break_shot">Break Shot</option>
+                        <option value="pocket_ball">Pocket Ball</option>
+                        <option value="switch_turn">Switch Turn</option>
+                        <option value="end_game">End Game</option>
+                    </select>
+
+                    <label for="ball_number" class="block text-gray-700 mb-2">Ball Number (if applicable):</label>
+                    <input type="number" name="ball_number" id="ball_number" min="0" max="15" class="w-full mb-4">
+                    
+                    <label for="lag_winner" class="block text-gray-700 mb-2">Lag Winner (if applicable):</label>
+                    <select name="lag_winner" id="lag_winner" class="w-full mb-4">
+                        <!-- Dynamic Options -->
+                    </select>
+
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full" type="submit">Submit</button>
+                </form>
+                <div id="action-response"></div>
+            </div>
+        </div>
+    </div>
 
     <script>
+    // Accordion functionality
+    document.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+            content.classList.toggle('hidden');
+        });
+    });
+
+    // Handle action change logic
     function handleActionChange() {
         const action = document.getElementById('action').value;
         const ballNumberField = document.getElementById('ball_number');
         const lagWinnerField = document.getElementById('lag_winner');
     
-        // Clear or disable fields based on the selected action
         if (action === 'lag_to_break') {
             ballNumberField.value = '';
             ballNumberField.disabled = true;
@@ -115,6 +140,5 @@
         }
     }
     </script>
-    
 </body>
 </html>
