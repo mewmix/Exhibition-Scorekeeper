@@ -249,7 +249,7 @@ player_2.nineball_points_to_win = nineball_skill_level_points[player_2.nineball_
 
 class EightballGame:
     def __init__(self, player1_name, player2_name, game="eightball", break_shot=True, break_and_run=False, current_shooter=None, inning_total=0, lag_winner=None, eightball_rack_count=1, eightball_pocketing_context=None,
-                 inning_count_at_rack_start=0, rack_breaking_player=None, match_winner=None, current_shooter_defensive_shot=0,
+                 inning_count_at_rack_start=0, rack_breaking_player=None, match_winner=None,player1_balls_pocketed=None, player2_balls_pocketed=None, current_shooter_defensive_shot=0,
                  match_start_timestamp=time.time(), match_start_human_readable=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), match_end_timestamp=None, game_log_iterator=0, game_log={}):
         
         self.player1_name = player1_name
@@ -271,6 +271,10 @@ class EightballGame:
         self.match_end_timestamp = match_end_timestamp
         self.game_log_iterator = game_log_iterator
         self.game_log = game_log
+        # New attributes to track the balls pocketed by each player
+        self.player1_balls_pocketed = player1_balls_pocketed if player1_balls_pocketed is not None else []
+        self.player2_balls_pocketed = player2_balls_pocketed if player2_balls_pocketed is not None else []
+
 
     def to_json(self):
         game_state = {
@@ -341,24 +345,11 @@ class EightballGame:
         self.game_log_iterator += 1
         if self.is_game_over():
             self.end_game()
-
     def pocket_ball(self, ball_number):
-        if not (1 <= ball_number <= 15):
-            raise ValueError('Invalid ball number')
-
-        if self.match_winner:
-            raise ValueError('The game is already over')
-
-        if ball_number == 8:
-            self.match_winner = self.current_shooter
-        elif ball_number == 0:
-            self.switch_turn()
-            self.current_shooter_defensive_shot += 1
+        if self.current_shooter == self.player1_name:
+            self.player1_balls_pocketed.append(ball_number)
         else:
-            if self.current_shooter == self.player1_name:
-                self.eightball_pocketing_context = 'player1'
-            elif self.current_shooter == self.player2_name:
-                self.eightball_pocketing_context = 'player2'
+            self.player2_balls_pocketed.append(ball_number)
 
         self.game_log[self.game_log_iterator] = f'Player {self.current_shooter} pocketed ball {ball_number}'
         self.game_log_iterator += 1
