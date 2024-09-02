@@ -180,7 +180,9 @@ class EightballGame:
 
         if self.is_game_over():
             self.end_game()
+
     def pocket_ball(self, ball_number):
+
         if self.game_state.current_shooter == self.game_state.player1_name:
             pocketed_balls = self.game_state.get_player1_balls()
             pocketed_balls.append(str(ball_number))
@@ -191,7 +193,6 @@ class EightballGame:
             self.game_state.update_player2_balls(pocketed_balls)
 
         self.game_state.add_to_game_log(f'Player {self.game_state.current_shooter} pocketed ball {ball_number}')
-        self.switch_turn()
 
         if self.is_game_over():
             self.end_game()
@@ -318,7 +319,7 @@ def game_stats(game_id):
     if game_state.player1_id != user_id and game_state.player2_id != user_id:
         return jsonify({'error': 'Unauthorized access'}), 403
 
-    # No need to use json.loads, just access the properties directly
+    # Create a dictionary representing the current game state
     game_state_dict = {
         "player1_name": game_state.player1_name,
         "player2_name": game_state.player2_name,
@@ -379,9 +380,8 @@ def game_action():
         match_id = request.form.get('match_id')
         action = request.form.get('action')
         ball_number = request.form.get('ball_number')
-        lag_winner = request.form.get('lag_winner')
 
-        logging.debug(f"Received action: {action}, match_id: {match_id}, ball_number: {ball_number}, lag_winner: {lag_winner}")
+        logging.debug(f"Received action: {action}, match_id: {match_id}, ball_number: {ball_number}")
 
         game_state_record = db.session.get(GameState, match_id)  # Updated to SQLAlchemy 2.0
         if not game_state_record:
@@ -397,17 +397,12 @@ def game_action():
             return jsonify({'error': 'Invalid game type'}), 400
 
         try:
-            if action == 'lag_to_break':
-                current_game.lag_for_the_break(lag_winner)
-            elif action == 'take_break_shot':
-                current_game.take_break_shot(ball_pocketed=ball_number)
-            elif action == 'pocket_ball' and ball_number is not None:
-                ball_number = int(ball_number)
-                current_game.pocket_ball(ball_number)
-            elif action == 'switch_turn':
-                current_game.switch_turn()
-            elif action == 'end_game':
-                current_game.end_game()
+            if action == 'pocket_ball' and ball_number:
+                try:
+                    ball_number = int(ball_number)
+                    current_game.pocket_ball(ball_number)
+                except ValueError:
+                    return jsonify({'error': 'Invalid ball number'}), 400
 
             db.session.commit()
 

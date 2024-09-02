@@ -131,5 +131,37 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Match ID not found.');
         }
     });
+    document.addEventListener("DOMContentLoaded", function() {
+        // Assuming matchId is defined somewhere in your JavaScript, possibly passed from the server or another script
+        const matchId = 1; // Replace with dynamic value if needed
+    
+        // Function to update the rack based on the game state
+        function updateRack(gameState) {
+            // Clear all pocketed states
+            document.querySelectorAll(".ball").forEach(function(ball) {
+                ball.classList.remove("pocketed");
+            });
+    
+            // Mark pocketed balls
+            const pocketedBalls = gameState.player1_balls_pocketed.concat(gameState.player2_balls_pocketed);
+            pocketedBalls.forEach(function(ball) {
+                const ballElement = document.querySelector(`.ball[data-ball="${ball}"]`);
+                if (ballElement) {
+                    ballElement.classList.add("pocketed");
+                }
+            });
+        }
+    
+        // Fetch the current game state when the page loads
+        function fetchGameState() {
+            fetch(`/game/stats/${matchId}`)  // Use backticks to properly interpolate matchId
+            .then(response => response.json())
+            .then(data => updateRack(data))
+            .catch(error => console.error("Error fetching game state:", error));
+        }
+    
+        // Initial fetch to update the rack on page load
+        fetchGameState();
+    });
     
 });
