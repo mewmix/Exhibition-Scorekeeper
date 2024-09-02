@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle change event for match selection
     document.body.addEventListener('change', function(event) {
         if (event.target && event.target.id === 'current_match_select') {
-            var matchId = event.target.value;
+            const matchId = event.target.value;
             if (matchId) {
                 console.log("Match ID selected:", matchId); // Debug log
 
@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (statsButton) {
                     statsButton.setAttribute('data-match-id', matchId);
                 }
+
+                // Fetch and update the game state (rack and stats)
+                fetchGameState(matchId);
             }
         }
     });
@@ -85,6 +88,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('action-response').innerHTML = `<p>${data.message || data.error}</p>`;
+                    if (data.current_game_state) {
+                        updateRack(data.current_game_state);
+                    }
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -93,75 +99,108 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Function to fetch the game state and update the rack
+    function fetchGameState(matchId) {
+        fetch(`/game/stats/${matchId}`)
+            .then(response => response.json())
+            .then(data => {
+                updateRack(data);
+                updateStats(data);
+            })
+            .catch(error => console.error("Error fetching game state:", error));
+    }
+
+    // Function to update the rack based on the game state
+    function updateRack(gameState) {
+        document.querySelectorAll(".ball").forEach(function(ball) {
+            ball.classList.remove("pocketed");
+        });
+
+        const pocketedBalls = gameState.player1_balls_pocketed.concat(gameState.player2_balls_pocketed);
+        pocketedBalls.forEach(function(ball) {
+            const ballElement = document.querySelector(`.ball[data-ball="${ball}"]`);
+            if (ballElement) {
+                ballElement.classList.add("pocketed");
+            }
+        });
+
+        // Attach event listeners to each ball to handle pocketing or break shot
+        document.querySelectorAll(".ball").forEach(function(ball) {
+            ball.addEventListener("click", function() {
+                const ballNumber = this.getAttribute("data-ball");
+                if (!this.classList.contains("pocketed")) {
+                    const actionType = document.querySelector('input[name="action_type"]:checked').value;
+                    submitBallAction(matchId, ballNumber, actionType);
+                }
+            });
+        });
+    }
+
+    // Function to update the game stats
+    function updateStats(gameState) {
+        const statsContainer = document.getElementById('game-stats-content');
+        statsContainer.innerHTML = `
+            <p><strong>Game Type:</strong> ${gameState.game_type}</p>
+            <p><strong>Player 1:</strong> ${gameState.player1_name}</p>
+            <p><strong>Player 2:</strong> ${gameState.player2_name}</p>
+            <p><strong>Lag Winner:</strong> ${gameState.lag_winner || 'None'}</p>
+            <p><strong>Break Shot Taken:</strong> ${gameState.break_shot_taken ? 'Yes' : 'No'}</p>
+            <p><strong>Break and Run:</strong> ${gameState.break_and_run ? 'Yes' : 'No'}</p>
+            <p><strong>Current Shooter:</strong> ${gameState.current_shooter || 'None'}</p>
+            <p><strong>Inning Total:</strong> ${gameState.inning_total}</p>
+            <p><strong>Eightball Rack Count:</strong> ${gameState.eightball_rack_count}</p>
+            <p><strong>Match Start:</strong> ${gameState.match_start_human_readable}</p>
+            <p><strong>Game Log:</strong></p>
+            <ul class="game-log">
+                ${Object.entries(gameState.game_log).map(([key, value]) => `<li>${value}</li>`).join('')}
+            </ul>
+        `;
+    }
+
+    // Function to submit a ball action (pocket or break shot)
+    function submitBallAction(matchId, ballNumber, actionType) {
+        const formData = new FormData();
+        formData.append('match_id', matchId);
+        formData.append('action', actionType);
+        formData.append('ball_number', ballNumber);
+
+        fetch('/game/action', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message === "Action processed successfully") {
+                updateRack(data.current_game_state);
+                updateStats(data.current_game_state);
+            } else {
+                alert(data.error || "Failed to process the action.");
+            }
+        })
+        .catch(error => console.error("Error processing action:", error));
+    }
+
     // Initial attachment of the form submission listener
     attachFormSubmissionListener();
+
+    // Event listener for the stats button to load game stats
     document.getElementById('load-stats-btn').addEventListener('click', function() {
-        // Retrieve the match ID from the data attribute
         const matchId = this.getAttribute('data-match-id');
         if (matchId) {
-            // Construct the URL using the match ID
-            const statsUrl = `/game/stats/${matchId}`;
-    
-            fetch(statsUrl)
-                .then(response => response.json())
-                .then(data => {
-                    const statsContainer = document.getElementById('game-stats-content');
-                    statsContainer.innerHTML = `
-                        <p><strong>Game:</strong> ${data.game}</p>
-                        <p><strong>Player 1:</strong> ${data.player1_name}</p>
-                        <p><strong>Player 2:</strong> ${data.player2_name}</p>
-                        <p><strong>Lag Winner:</strong> ${data.lag_winner ? data.lag_winner : 'None'}</p>
-                        <p><strong>Break Shot Taken:</strong> ${data.break_shot_taken}</p>
-                        <p><strong>Break and Run:</strong> ${data.break_and_run}</p>
-                        <p><strong>Current Shooter:</strong> ${data.current_shooter ? data.current_shooter : 'None'}</p>
-                        <p><strong>Inning Total:</strong> ${data.inning_total}</p>
-                        <p><strong>Eightball Rack Count:</strong> ${data.eightball_rack_count}</p>
-                        <p><strong>Match Start:</strong> ${data.match_start_human_readable}</p>
-                        <p><strong>Game Log:</strong></p>
-                        <ul class="game-log">
-                            ${Object.entries(data.game_log).map(([key, value]) => `<li>${value}</li>`).join('')}
-                        </ul>
-                    `;
-                })
-                .catch(error => {
-                    console.error('Error fetching game stats:', error);
-                    document.getElementById('game-stats-content').innerHTML = '<p>Error loading stats. Please try again.</p>';
-                });
+            fetchGameState(matchId);
         } else {
             console.error('Match ID not found.');
         }
     });
-    document.addEventListener("DOMContentLoaded", function() {
-        // Assuming matchId is defined somewhere in your JavaScript, possibly passed from the server or another script
-        const matchId = 1; // Replace with dynamic value if needed
-    
-        // Function to update the rack based on the game state
-        function updateRack(gameState) {
-            // Clear all pocketed states
-            document.querySelectorAll(".ball").forEach(function(ball) {
-                ball.classList.remove("pocketed");
-            });
-    
-            // Mark pocketed balls
-            const pocketedBalls = gameState.player1_balls_pocketed.concat(gameState.player2_balls_pocketed);
-            pocketedBalls.forEach(function(ball) {
-                const ballElement = document.querySelector(`.ball[data-ball="${ball}"]`);
-                if (ballElement) {
-                    ballElement.classList.add("pocketed");
-                }
-            });
+
+    // Function to handle page load initial state
+    function initializePage() {
+        const matchIdInput = document.getElementById('match_id');
+        if (matchIdInput && matchIdInput.value) {
+            fetchGameState(matchIdInput.value);
         }
-    
-        // Fetch the current game state when the page loads
-        function fetchGameState() {
-            fetch(`/game/stats/${matchId}`)  // Use backticks to properly interpolate matchId
-            .then(response => response.json())
-            .then(data => updateRack(data))
-            .catch(error => console.error("Error fetching game state:", error));
-        }
-    
-        // Initial fetch to update the rack on page load
-        fetchGameState();
-    });
-    
+    }
+
+    // Initialize the page on load
+    initializePage();
 });

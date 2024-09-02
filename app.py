@@ -383,7 +383,7 @@ def game_action():
 
         logging.debug(f"Received action: {action}, match_id: {match_id}, ball_number: {ball_number}")
 
-        game_state_record = db.session.get(GameState, match_id)  # Updated to SQLAlchemy 2.0
+        game_state_record = db.session.get(GameState, match_id)  # Fetch the game state
         if not game_state_record:
             return jsonify({'error': 'Match not found'}), 404
 
@@ -404,6 +404,7 @@ def game_action():
                 except ValueError:
                     return jsonify({'error': 'Invalid ball number'}), 400
 
+            # After processing the action, commit the updated game state to the database
             db.session.commit()
 
             return jsonify({
