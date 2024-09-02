@@ -1,222 +1,323 @@
-/* Base styles */
-body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    line-height: 1.6;
-    background-color: #f5f5f5;
-    color: #333;
+/* Base Reset */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-img {
-    max-width: 100%;
-    height: auto;
+html {
+    font-size: 100%; /* 16px */
+    scroll-behavior: smooth;
 }
 
-/* Typography */
-h1, h2, h3, h4, h5, h6, p {
-    margin-left: 5%;
-    margin-right: 5%;
+body {
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f9fa;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Fluid Typography */
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
 }
 
 h1 {
-    font-size: 1.8rem; /* Example for heading size */
+    font-size: calc(1.375rem + 1.5vw); /* Responsive heading */
+}
+
+h2 {
+    font-size: calc(1.325rem + 0.9vw);
 }
 
 p {
-    font-size: 1rem; /* Example for paragraph size */
+    font-size: 1rem;
+    margin-bottom: 1rem;
 }
 
-/* Media Queries for Responsive Adjustments */
-@media (max-width: 600px) {
+@media (min-width: 1200px) {
     h1 {
-        font-size: 1.5rem;
+        font-size: 3rem;
     }
-    
-    p {
-        font-size: 0.9rem;
-    }
-
-    nav ul {
-        padding: 0;
-        display: block;
-        text-align: center;
-    }
-
-    nav ul li {
-        margin: 0;
-        display: block;
-    }
-
-    nav a {
-        display: block;
-        padding: 10px;
-    }
-    
-    /* Add more responsive styles as needed */
 }
-
-/* Larger Devices */
-@media (min-width: 601px) {
-    /* Styles for larger screens */
-}
-
-/* Touch Targets */
-button, a {
-    min-width: 48px;
-    min-height: 48px;
-    padding: 12px;
-}
-
-/* Basic Reset */
-* {
-    box-sizing: border-box;
-}
-
-body, h1, h2, h3, p, form, button {
-    margin: 0;
-    padding: 0;
-    font-family: 'Arial', sans-serif;
-}
-
-/* Bubbly Theme */
-html, body {
-    height: 100%; /* Ensure full height */
-    margin: 0;
-    padding: 0;
-    font-family: 'Arial', sans-serif;
-}
-
-body {
-    display: flex;
-    flex-direction: column; /* Stack content vertically */
-    background-color: #e3f2fd;
-    padding: 5px;
-    min-height: 100vh; /* Make body at least viewport height */
-}
-
-header, main {
-    padding: 1em;
-}
-main {
-    flex: 1; /* Allows main to expand and fill available space */
-    padding: 1em;
-    display: flex;
-    flex-direction: column;
-}
-
-.button {
-    display: block;
+/* Container */
+.container {
     width: 100%;
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 25px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media (min-width: 768px) {
+    .container {
+        max-width: 720px;
+    }
+}
+
+@media (min-width: 992px) {
+    .container {
+        max-width: 960px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1140px;
+    }
+}
+
+/* Grid System */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -0.5rem;
+    margin-left: -0.5rem;
+}
+
+.col {
+    flex: 1 0 0%;
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+}
+
+@media (min-width: 576px) {
+    .col-sm {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+@media (min-width: 768px) {
+    .col-md {
+        flex: 0 0 33.333%;
+        max-width: 33.333%;
+    }
+}
+
+@media (min-width: 992px) {
+    .col-lg {
+        flex: 0 0 25%;
+        max-width: 25%;
+    }
+}
+
+@media (min-width: 1200px) {
+    .col-xl {
+        flex: 0 0 20%;
+        max-width: 20%;
+    }
+}
+/* Buttons */
+.button {
+    display: inline-block;
+    font-size: 1rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
     border: none;
     color: #fff;
-    background-color: #42a5f5;
-    cursor: pointer;
+    background-color: #007bff;
     text-align: center;
-    transition: background-color 0.3s;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
 }
 
 .button:hover {
-    background-color: #1e88e5;
+    background-color: #0056b3;
+    transform: translateY(-2px);
 }
 
-.button.red {
-    background-color: #ef5350;
+.button:active {
+    background-color: #004085;
+    transform: translateY(0);
 }
 
-.button.red:hover {
-    background-color: #e53935;
+.button-primary {
+    background-color: #28a745;
 }
 
-.button.gray {
-    background-color: #bdbdbd;
+.button-primary:hover {
+    background-color: #218838;
 }
 
-.button.gray:hover {
-    background-color: #9e9e9e;
+.button-secondary {
+    background-color: #6c757d;
 }
 
-/* Responsive Grid */
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 10px;
+.button-secondary:hover {
+    background-color: #5a6268;
 }
 
-/* Media Queries for Responsive Adjustments */
+/* Icons */
+.icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: inline-block;
+    fill: currentColor;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+}
+
+/* Responsive Icon Buttons */
+.button-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 @media (max-width: 768px) {
     .button {
-        padding: 10px;
-        border-radius: 20px;
+        padding: 0.6rem 1rem;
+        border-radius: 0.4rem;
     }
 }
-
-/* Adjustments for ultra mobile-friendly responsiveness */
-@media (max-width: 480px) {
-    header, main, footer {
-        padding: 0.5em; /* Reduce padding for smaller screens */
-    }
-    
-    .button {
-        padding: 8px; /* Adjust button padding */
-        margin: 5px 0; /* Reduce margin between buttons */
-        border-radius: 15px; /* Slightly round the corners */
-    }
-
-    /* Adjust grid layout for very small screens */
-    .grid {
-        grid-gap: 5px; /* Reduce gap */
-    }
+/* Cards */
+.card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: box-shadow 0.3s;
 }
 
-/* Footer adjustment */
-footer {
-    background-color: #90caf9;
+.card:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    padding: 1rem;
+    background-color: #007bff;
     color: #fff;
+    font-weight: bold;
     text-align: center;
-    padding: 10px 0;
-    margin-top: auto; /* Push footer to bottom */
 }
 
-/* Ensure that there are no margins on the last element inside the footer that might be pushing it down */
-footer > *:last-child {
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-footer {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    text-align: right;
+}
+
+/* Image Cards */
+.card-image {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Mobile Responsive Cards */
+@media (max-width: 480px) {
+    .card-body {
+        padding: 1rem;
+    }
+
+    .card-header, .card-footer {
+        padding: 0.75rem;
+    }
+}
+/* Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.mt-0 {
+    margin-top: 0;
+}
+
+.mb-0 {
     margin-bottom: 0;
 }
 
-/* Additional styles for inputs, divs, etc. */
-/* Game Stats Section */
-.game-stats-content p {
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.pt-1 {
+    padding-top: 0.25rem;
+}
+
+.pb-1 {
+    padding-bottom: 0.25rem;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #007bff;
+    border-radius: 10px;
+    border: 2px solid transparent;
+}
+
+/* Form Elements */
+input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    background-color: #fff;
     font-size: 1rem;
-    margin: 10px 0;
+    transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-.game-log {
-    list-style-type: disc;
-    padding-left: 20px;
+input[type="text"]:focus, input[type="number"]:focus, select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #121212;
+        color: #e0e0e0;
+    }
 
-.game-log li {
-    margin-bottom: 5px;
-}
+    .button {
+        background-color: #1e88e5;
+    }
 
-.stats-container {
-    background-color: #f1f8e9;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #aed581;
-    animation: fadeInUp 0.5s ease-in-out;
-}
+    .button:hover {
+        background-color: #42a5f5;
+    }
 
-.stats-container p strong {
-    font-weight: bold;
-    color: #2e7d32;
-}
+    .card {
+        background-color: #1c1c1c;
+        color: #e0e0e0;
+    }
 
-.stats-container ul.game-log {
-    margin-top: 10px;
-    padding-left: 15px;
-    color: #388e3c;
+    .card-header {
+        background-color: #1e88e5;
+    }
+
+    input[type="text"], input[type="number"], select {
+        background-color: #333;
+        border-color: #555;
+        color: #e0e0e0;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+        border-color: #42a5f5;
+    }
 }
