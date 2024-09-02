@@ -95,18 +95,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial attachment of the form submission listener
     attachFormSubmissionListener();
-
-    // Handle click event for loading game stats
     document.getElementById('load-stats-btn').addEventListener('click', function() {
-        var matchId = this.getAttribute('data-match-id');
+        // Retrieve the match ID from the data attribute
+        const matchId = this.getAttribute('data-match-id');
         if (matchId) {
-            var statsUrl = `/game/stats/${matchId}`;
+            // Construct the URL using the match ID
+            const statsUrl = `/game/stats/${matchId}`;
+    
             fetch(statsUrl)
                 .then(response => response.json())
                 .then(data => {
-                    var statsDiv = document.getElementById('stats');
-                    statsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    const statsContainer = document.getElementById('game-stats-content');
+                    statsContainer.innerHTML = `
+                        <p><strong>Game:</strong> ${data.game}</p>
+                        <p><strong>Player 1:</strong> ${data.player1_name}</p>
+                        <p><strong>Player 2:</strong> ${data.player2_name}</p>
+                        <p><strong>Lag Winner:</strong> ${data.lag_winner ? data.lag_winner : 'None'}</p>
+                        <p><strong>Break Shot Taken:</strong> ${data.break_shot_taken}</p>
+                        <p><strong>Break and Run:</strong> ${data.break_and_run}</p>
+                        <p><strong>Current Shooter:</strong> ${data.current_shooter ? data.current_shooter : 'None'}</p>
+                        <p><strong>Inning Total:</strong> ${data.inning_total}</p>
+                        <p><strong>Eightball Rack Count:</strong> ${data.eightball_rack_count}</p>
+                        <p><strong>Match Start:</strong> ${data.match_start_human_readable}</p>
+                        <p><strong>Game Log:</strong></p>
+                        <ul class="game-log">
+                            ${Object.entries(data.game_log).map(([key, value]) => `<li>${value}</li>`).join('')}
+                        </ul>
+                    `;
+                })
+                .catch(error => {
+                    console.error('Error fetching game stats:', error);
+                    document.getElementById('game-stats-content').innerHTML = '<p>Error loading stats. Please try again.</p>';
                 });
+        } else {
+            console.error('Match ID not found.');
         }
     });
+    
 });

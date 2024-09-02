@@ -48,19 +48,23 @@
             </div>
         </div>
     </section>
-
-    <section class="mb-6">
-        <h2 class="text-lg mb-4">Game Stats</h2>
+    <section class="mb-6 game-stats-section">
+        <h2 class="section-title">Game Stats</h2>
         <button 
             id="load-stats-btn"
             data-base-url="{{ url_for('game_stats', game_id=0)[:-1] }}"
-            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            class="button blue-button"
             type="button">
             Load Game Stats
         </button>
-        <div id="stats" class="mt-4"></div>
+        <div id="stats" class="mt-4 stats-container">
+            <!-- Game stats will be dynamically injected here -->
+            <div id="game-stats-content" class="game-stats-content">
+                <!-- This content will be dynamically populated -->
+            </div>
+        </div>
     </section>
-
+    
     <section class="mb-6">
         <h2 class="text-lg mb-4">Game Action Form</h2>
         <form action="/game/action" method="post" id="game-action-form" class="mb-4">

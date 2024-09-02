@@ -187,3 +187,36 @@ footer > *:last-child {
 }
 
 /* Additional styles for inputs, divs, etc. */
+/* Game Stats Section */
+.game-stats-content p {
+    font-size: 1rem;
+    margin: 10px 0;
+}
+
+.game-log {
+    list-style-type: disc;
+    padding-left: 20px;
+}
+
+.game-log li {
+    margin-bottom: 5px;
+}
+
+.stats-container {
+    background-color: #f1f8e9;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #aed581;
+    animation: fadeInUp 0.5s ease-in-out;
+}
+
+.stats-container p strong {
+    font-weight: bold;
+    color: #2e7d32;
+}
+
+.stats-container ul.game-log {
+    margin-top: 10px;
+    padding-left: 15px;
+    color: #388e3c;
+}
